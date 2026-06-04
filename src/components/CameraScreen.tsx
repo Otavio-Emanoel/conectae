@@ -294,7 +294,7 @@ export const CameraScreen: React.FC<CameraScreenProps> = ({ onClose }) => {
     function initFaceMesh() {
       if (faceMesh) return;
       console.log('Initializing MediaPipe FaceMesh…');
-      statusTx.textContent = 'Carregando modelo IA…';
+      statusTx.textContent = 'Carregando…';
 
       faceMesh = new FaceMesh({
         locateFile: file =>
@@ -320,7 +320,7 @@ export const CameraScreen: React.FC<CameraScreenProps> = ({ onClose }) => {
         startRenderLoop();
       }).catch(err => {
         console.error('FaceMesh init error:', err && err.message);
-        statusTx.textContent = 'Erro ao carregar modelo: ' + (err && err.message);
+        statusTx.textContent = 'Erro ao iniciar';
       });
     }
 
@@ -335,13 +335,32 @@ export const CameraScreen: React.FC<CameraScreenProps> = ({ onClose }) => {
 
         if (!video.readyState || video.readyState < 2) return;
 
-        // Draw video frame (mirrored for selfie camera)
+        // Draw video frame with "cover" behaviour (no stretching).
+        // Calculate source rect so the video fills the canvas while keeping
+        // its native aspect ratio — equivalent to CSS object-fit: cover.
+        const vw = video.videoWidth  || canvas.width;
+        const vh = video.videoHeight || canvas.height;
+        const cw = canvas.width;
+        const ch = canvas.height;
+        const videoRatio  = vw / vh;
+        const canvasRatio = cw / ch;
+        let sx = 0, sy = 0, sw = vw, sh = vh;
+        if (videoRatio > canvasRatio) {
+          // Video is wider → crop the sides
+          sw = vh * canvasRatio;
+          sx = (vw - sw) / 2;
+        } else {
+          // Video is taller → crop top/bottom
+          sh = vw / canvasRatio;
+          sy = (vh - sh) / 2;
+        }
+
         ctx.save();
         if (facingMode === 'user') {
-          ctx.translate(canvas.width, 0);
+          ctx.translate(cw, 0);
           ctx.scale(-1, 1);
         }
-        ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+        ctx.drawImage(video, sx, sy, sw, sh, 0, 0, cw, ch);
         ctx.restore();
 
         // Apply color / overlay filter first (so AR is on top)
