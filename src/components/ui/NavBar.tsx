@@ -6,9 +6,6 @@ import Animated, {
   useSharedValue,
   useAnimatedStyle,
   withSpring,
-  withTiming,
-  withSequence,
-  Easing,
   runOnJS
 } from 'react-native-reanimated';
 import { COLORS } from '../../constants/colors';
@@ -34,11 +31,6 @@ export const NavBar: React.FC<NavBarProps> = ({ activeIndex, onChangeTab }) => {
   const scaleX = useSharedValue(1);
   const scaleY = useSharedValue(1);
 
-  // Shared values for icon pop scaling
-  const homeIconScale = useSharedValue(1);
-  const postIconScale = useSharedValue(1);
-  const profileIconScale = useSharedValue(1);
-
   // Keep track of the gesture dragging status
   const isDragging = useSharedValue(false);
   const startX = useSharedValue(0);
@@ -47,17 +39,6 @@ export const NavBar: React.FC<NavBarProps> = ({ activeIndex, onChangeTab }) => {
   useEffect(() => {
     if (!isDragging.value) {
       indicatorTranslateX.value = withSpring(activeIndex * TAB_WIDTH, SPRING_SPECS.snappy);
-    }
-  }, [activeIndex]);
-
-  // Handle tap animations and active state pops
-  useEffect(() => {
-    if (activeIndex === 0) {
-      homeIconScale.value = withSequence(withTiming(1.3, { duration: 120 }), withSpring(1, SPRING_SPECS.bouncy));
-    } else if (activeIndex === 1) {
-      postIconScale.value = withSequence(withTiming(1.3, { duration: 120 }), withSpring(1, SPRING_SPECS.bouncy));
-    } else if (activeIndex === 2) {
-      profileIconScale.value = withSequence(withTiming(1.3, { duration: 120 }), withSpring(1, SPRING_SPECS.bouncy));
     }
   }, [activeIndex]);
 
@@ -81,7 +62,7 @@ export const NavBar: React.FC<NavBarProps> = ({ activeIndex, onChangeTab }) => {
       scaleX.value = 1.15 + Math.min(0.35, velocity / 3000);
       scaleY.value = 0.9 - Math.min(0.2, velocity / 6000);
     })
-    .onEnd((event) => {
+    .onEnd(() => {
       isDragging.value = false;
 
       // Find the closest tab center position
@@ -110,21 +91,28 @@ export const NavBar: React.FC<NavBarProps> = ({ activeIndex, onChangeTab }) => {
     };
   });
 
-  // Individual icon animated styles
-  const homeIconStyle = useAnimatedStyle(() => ({ transform: [{ scale: homeIconScale.value }] }));
-  const postIconStyle = useAnimatedStyle(() => ({ transform: [{ scale: postIconScale.value }] }));
-  const profileIconStyle = useAnimatedStyle(() => ({ transform: [{ scale: profileIconScale.value }] }));
-
   const tabs = [
-    { name: 'home' as const, icon: 'home' as const, animatedStyle: homeIconStyle },
-    { name: 'post' as const, icon: 'plus-circle' as const, animatedStyle: postIconStyle },
-    { name: 'profile' as const, icon: 'user' as const, animatedStyle: profileIconStyle }
+    { name: 'home' as const, icon: 'home' as const },
+    { name: 'post' as const, icon: 'plus-circle' as const },
+    { name: 'profile' as const, icon: 'user' as const }
   ];
 
   return (
     <View style={styles.container}>
       <View style={styles.navContent}>
-        {/* Animated Liquid Sliding & Draggable Indicator Pill */}
+        {/* Tab Buttons Overlay (Invisible Touch Areas at zIndex 1) */}
+        <View style={styles.buttonsOverlay}>
+          {tabs.map((tab, index) => (
+            <TouchableOpacity
+              key={tab.name}
+              onPress={() => onChangeTab(index)}
+              style={styles.tabButton}
+              activeOpacity={0.8}
+            />
+          ))}
+        </View>
+
+        {/* Animated Liquid Sliding & Draggable Indicator Pill (zIndex 2) */}
         <GestureDetector gesture={panGesture}>
           <Animated.View
             style={[
@@ -134,27 +122,42 @@ export const NavBar: React.FC<NavBarProps> = ({ activeIndex, onChangeTab }) => {
           />
         </GestureDetector>
 
-        {/* Tab Buttons */}
-        {tabs.map((tab, index) => {
-          const isActive = index === activeIndex;
+        {/* Icons Overlay (zIndex 3 - pointerEvents none for touch passthrough) */}
+        <View style={styles.iconsOverlay} pointerEvents="none">
+          {tabs.map((tab, index) => {
+            // Calculate animated styles driven dynamically by indicator position
+            const activeIconStyle = useAnimatedStyle(() => {
+              const dist = Math.abs(indicatorTranslateX.value - index * TAB_WIDTH);
+              const progress = Math.max(0, 1 - dist / TAB_WIDTH);
+              return {
+                opacity: progress,
+                transform: [{ scale: 1.0 + progress * 0.25 }],
+              };
+            });
 
-          return (
-            <TouchableOpacity
-              key={tab.name}
-              onPress={() => onChangeTab(index)}
-              style={styles.tabButton}
-              activeOpacity={0.8}
-            >
-              <Animated.View style={tab.animatedStyle}>
-                <Feather
-                  name={tab.icon}
-                  size={24}
-                  color={isActive ? COLORS.primary : 'rgba(255, 255, 255, 0.65)'}
-                />
-              </Animated.View>
-            </TouchableOpacity>
-          );
-        })}
+            const inactiveIconStyle = useAnimatedStyle(() => {
+              const dist = Math.abs(indicatorTranslateX.value - index * TAB_WIDTH);
+              const progress = Math.max(0, 1 - dist / TAB_WIDTH);
+              return {
+                opacity: 1 - progress,
+                transform: [{ scale: 1.0 + progress * 0.25 }],
+              };
+            });
+
+            return (
+              <View key={tab.name} style={styles.tabIconWrapper}>
+                {/* Active state icon (Navy) */}
+                <Animated.View style={[StyleSheet.absoluteFillObject, styles.iconCentering, activeIconStyle]}>
+                  <Feather name={tab.icon} size={24} color={COLORS.primary} />
+                </Animated.View>
+                {/* Inactive state icon (Translucent White) */}
+                <Animated.View style={[StyleSheet.absoluteFillObject, styles.iconCentering, inactiveIconStyle]}>
+                  <Feather name={tab.icon} size={24} color="rgba(255, 255, 255, 0.65)" />
+                </Animated.View>
+              </View>
+            );
+          })}
+        </View>
       </View>
     </View>
   );
@@ -178,8 +181,6 @@ const styles = StyleSheet.create({
     // LiquidGlass styling: translucent glassmorphic backdrop
     backgroundColor: 'rgba(18, 22, 32, 0.84)',
     borderRadius: 32,
-    flexDirection: 'row',
-    alignItems: 'center',
     position: 'relative',
     borderWidth: 1,
     borderColor: 'rgba(255, 255, 255, 0.12)',
@@ -191,6 +192,16 @@ const styles = StyleSheet.create({
     shadowRadius: 12,
     elevation: 8,
   },
+  buttonsOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    flexDirection: 'row',
+    zIndex: 1,
+  },
+  iconsOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    flexDirection: 'row',
+    zIndex: 3,
+  },
   indicator: {
     position: 'absolute',
     width: PILL_WIDTH,
@@ -198,13 +209,23 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.background, // neon yellow liquid pill
     borderRadius: PILL_HEIGHT / 2,
     left: (TAB_WIDTH - PILL_WIDTH) / 2,
-    zIndex: 1,
+    top: (64 - PILL_HEIGHT) / 2, // Centered vertically in 64px container
+    zIndex: 2,
   },
   tabButton: {
     flex: 1,
     height: '100%',
     justifyContent: 'center',
     alignItems: 'center',
-    zIndex: 2,
+  },
+  tabIconWrapper: {
+    flex: 1,
+    height: '100%',
+    position: 'relative',
+  },
+  iconCentering: {
+    justifyContent: 'center',
+    alignItems: 'center',
   },
 });
+
