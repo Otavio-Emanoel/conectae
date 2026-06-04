@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import {
   StyleSheet,
   View,
@@ -19,15 +19,26 @@ interface PostDetailScreenProps {
   post: PostItem;
   onBack: () => void;
   onAddComment: (postId: string, commentText: string) => void;
+  scrollTrigger?: { direction: 'up' | 'down'; timestamp: number } | null;
 }
 
 export const PostDetailScreen: React.FC<PostDetailScreenProps> = ({
   post,
   onBack,
-  onAddComment
+  onAddComment,
+  scrollTrigger
 }) => {
   const [commentText, setCommentText] = useState('');
   const scrollViewRef = useRef<ScrollView>(null);
+  const scrollOffsetRef = useRef(0);
+
+  useEffect(() => {
+    if (scrollTrigger) {
+      const delta = scrollTrigger.direction === 'down' ? 250 : -250;
+      const targetY = Math.max(0, scrollOffsetRef.current + delta);
+      scrollViewRef.current?.scrollTo({ y: targetY, animated: true });
+    }
+  }, [scrollTrigger]);
 
   const handleSend = () => {
     if (commentText.trim() === '') return;
@@ -63,6 +74,10 @@ export const PostDetailScreen: React.FC<PostDetailScreenProps> = ({
         style={styles.container} 
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
+        onScroll={(event) => {
+          scrollOffsetRef.current = event.nativeEvent.contentOffset.y;
+        }}
+        scrollEventThrottle={16}
       >
         {/* Full Post Card (non-pressable) */}
         <PostCard post={post} index={0} />

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { StyleSheet, View, Text, TouchableOpacity, ScrollView, Platform } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import Animated, {
@@ -18,6 +18,7 @@ interface SettingsScreenProps {
   activeSection?: 'edit' | 'notifications' | 'privacy';
   profileData?: { name: string; role: string; bio: string };
   onSaveProfile?: (data: { name: string; role: string; bio: string }) => void;
+  scrollTrigger?: { direction: 'up' | 'down'; timestamp: number } | null;
 }
 
 // Custom Reanimated Switch component for a premium native feel
@@ -57,8 +58,19 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({
   onLogout,
   activeSection = 'edit',
   profileData = { name: 'Otávio Emanoel', role: 'Desenvolvedor React Native', bio: 'Desenvolvedor React Native | Especialista em UX Fluido' },
-  onSaveProfile
+  onSaveProfile,
+  scrollTrigger
 }) => {
+  const scrollViewRef = useRef<ScrollView>(null);
+  const scrollOffsetRef = useRef(0);
+
+  useEffect(() => {
+    if (scrollTrigger) {
+      const delta = scrollTrigger.direction === 'down' ? 250 : -250;
+      const targetY = Math.max(0, scrollOffsetRef.current + delta);
+      scrollViewRef.current?.scrollTo({ y: targetY, animated: true });
+    }
+  }, [scrollTrigger]);
   // Edit Profile Form States
   const [name, setName] = useState(profileData.name);
   const [role, setRole] = useState(profileData.role);
@@ -261,7 +273,15 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({
         <View style={styles.backButtonPlaceholder} />
       </View>
 
-      <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+      <ScrollView 
+        ref={scrollViewRef}
+        contentContainerStyle={styles.scrollContent} 
+        showsVerticalScrollIndicator={false}
+        onScroll={(event) => {
+          scrollOffsetRef.current = event.nativeEvent.contentOffset.y;
+        }}
+        scrollEventThrottle={16}
+      >
         {renderSectionContent()}
 
         {/* Log Out option listed at bottom of settings */}

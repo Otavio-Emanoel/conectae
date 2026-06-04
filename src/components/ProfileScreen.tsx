@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useRef, useEffect } from 'react';
 import { StyleSheet, View, Text, ScrollView } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import { COLORS } from '../constants/colors';
@@ -9,15 +9,35 @@ interface ProfileScreenProps {
   profileData: { name: string; role: string; bio: string };
   userPosts: PostItem[];
   onPostPress: (postId: string) => void;
+  scrollTrigger?: { direction: 'up' | 'down'; timestamp: number } | null;
 }
 
 export const ProfileScreen: React.FC<ProfileScreenProps> = ({ 
   profileData,
   userPosts,
-  onPostPress
+  onPostPress,
+  scrollTrigger
 }) => {
+  const scrollViewRef = useRef<ScrollView>(null);
+  const scrollOffsetRef = useRef(0);
+
+  useEffect(() => {
+    if (scrollTrigger) {
+      const delta = scrollTrigger.direction === 'down' ? 250 : -250;
+      const targetY = Math.max(0, scrollOffsetRef.current + delta);
+      scrollViewRef.current?.scrollTo({ y: targetY, animated: true });
+    }
+  }, [scrollTrigger]);
   return (
-    <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+    <ScrollView 
+      ref={scrollViewRef}
+      contentContainerStyle={styles.scrollContent} 
+      showsVerticalScrollIndicator={false}
+      onScroll={(event) => {
+        scrollOffsetRef.current = event.nativeEvent.contentOffset.y;
+      }}
+      scrollEventThrottle={16}
+    >
       {/* Profile Info Header Card */}
       <AnimateEntrance preset="scale" delay={100}>
         <View style={styles.profileHeaderCard}>
