@@ -1,19 +1,20 @@
 import React from 'react';
-import { StyleSheet, View, Text, ScrollView, TouchableOpacity } from 'react-native';
+import { StyleSheet, View, Text, ScrollView } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import { COLORS } from '../constants/colors';
 import { AnimateEntrance } from './ui/AnimateEntrance';
+import { PostCard, PostItem } from './HomeScreen';
 
 interface ProfileScreenProps {
-  onLogout?: () => void;
-  onNavigateToSettings: (section: 'edit' | 'notifications' | 'privacy') => void;
   profileData: { name: string; role: string; bio: string };
+  userPosts: PostItem[];
+  onPostPress: (postId: string) => void;
 }
 
 export const ProfileScreen: React.FC<ProfileScreenProps> = ({ 
-  onLogout, 
-  onNavigateToSettings,
-  profileData
+  profileData,
+  userPosts,
+  onPostPress
 }) => {
   return (
     <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
@@ -41,7 +42,7 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
             </View>
             <View style={styles.statDivider} />
             <View style={styles.statItem}>
-              <Text style={styles.statNumber}>28</Text>
+              <Text style={styles.statNumber}>{userPosts.length}</Text>
               <Text style={styles.statLabel}>Publicações</Text>
             </View>
             <View style={styles.statDivider} />
@@ -53,52 +54,29 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
         </View>
       </AnimateEntrance>
 
-      {/* Settings / Actions List */}
-      <View style={styles.settingsSection}>
-        <AnimateEntrance preset="slideUp" delay={200}>
-          <TouchableOpacity onPress={() => onNavigateToSettings('edit')} style={styles.settingItem} activeOpacity={0.6}>
-            <View style={styles.settingLeft}>
-              <Feather name="edit-3" size={20} color={COLORS.primary} />
-              <Text style={styles.settingText}>Editar Perfil</Text>
-            </View>
-            <Feather name="chevron-right" size={20} color={COLORS.textMuted} />
-          </TouchableOpacity>
-        </AnimateEntrance>
+      {/* User Posts Section */}
+      <AnimateEntrance preset="slideUp" delay={200}>
+        <Text style={styles.sectionTitle}>Minhas Publicações</Text>
+      </AnimateEntrance>
 
-        <AnimateEntrance preset="slideUp" delay={275}>
-          <TouchableOpacity onPress={() => onNavigateToSettings('notifications')} style={styles.settingItem} activeOpacity={0.6}>
-            <View style={styles.settingLeft}>
-              <Feather name="bell" size={20} color={COLORS.primary} />
-              <Text style={styles.settingText}>Configurações de Notificações</Text>
+      <View style={styles.postsContainer}>
+        {userPosts.length > 0 ? (
+          userPosts.map((post, index) => (
+            <PostCard 
+              key={post.id} 
+              post={post} 
+              index={index} 
+              onPress={() => onPostPress(post.id)}
+            />
+          ))
+        ) : (
+          <AnimateEntrance preset="fade" delay={300}>
+            <View style={styles.emptyContainer}>
+              <Feather name="edit-3" size={32} color={COLORS.textMuted} />
+              <Text style={styles.emptyText}>Você ainda não fez nenhuma publicação.</Text>
             </View>
-            <Feather name="chevron-right" size={20} color={COLORS.textMuted} />
-          </TouchableOpacity>
-        </AnimateEntrance>
-
-        <AnimateEntrance preset="slideUp" delay={350}>
-          <TouchableOpacity onPress={() => onNavigateToSettings('privacy')} style={styles.settingItem} activeOpacity={0.6}>
-            <View style={styles.settingLeft}>
-              <Feather name="shield" size={20} color={COLORS.primary} />
-              <Text style={styles.settingText}>Privacidade e Segurança</Text>
-            </View>
-            <Feather name="chevron-right" size={20} color={COLORS.textMuted} />
-          </TouchableOpacity>
-        </AnimateEntrance>
-
-        {/* Log Out Action */}
-        <AnimateEntrance preset="slideUp" delay={425}>
-          <TouchableOpacity 
-            onPress={onLogout} 
-            style={[styles.settingItem, styles.logoutItem]} 
-            activeOpacity={0.6}
-          >
-            <View style={styles.settingLeft}>
-              <Feather name="log-out" size={20} color={COLORS.danger} />
-              <Text style={[styles.settingText, styles.logoutText]}>Sair da Conta</Text>
-            </View>
-            <Feather name="chevron-right" size={20} color={COLORS.textMuted} />
-          </TouchableOpacity>
-        </AnimateEntrance>
+          </AnimateEntrance>
+        )}
       </View>
     </ScrollView>
   );
@@ -122,7 +100,7 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.02,
     shadowRadius: 8,
     elevation: 2,
-    marginBottom: 20,
+    marginBottom: 12,
   },
   profileAvatarContainer: {
     position: 'relative',
@@ -143,7 +121,7 @@ const styles = StyleSheet.create({
     width: 24,
     height: 24,
     borderRadius: 12,
-    backgroundColor: COLORS.background, // verification accent badge
+    backgroundColor: COLORS.background,
     borderWidth: 2,
     borderColor: COLORS.white,
     justifyContent: 'center',
@@ -200,39 +178,32 @@ const styles = StyleSheet.create({
     height: 26,
     backgroundColor: 'rgba(18, 22, 32, 0.08)',
   },
-  settingsSection: {
-    gap: 12,
-  },
-  settingItem: {
-    backgroundColor: COLORS.white,
-    borderRadius: 16,
-    paddingHorizontal: 20,
-    paddingVertical: 16,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    borderWidth: 1,
-    borderColor: 'rgba(18, 22, 32, 0.04)',
-    shadowColor: COLORS.primary,
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.01,
-    shadowRadius: 4,
-    elevation: 1,
-  },
-  settingLeft: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 14,
-  },
-  settingText: {
-    fontSize: 15,
-    fontWeight: '700',
+  sectionTitle: {
+    fontSize: 18,
+    fontWeight: '800',
     color: COLORS.primary,
+    marginBottom: 12,
+    marginTop: 8,
   },
-  logoutItem: {
-    borderColor: 'rgba(239, 68, 68, 0.08)',
+  postsContainer: {
+    gap: 16,
+    paddingBottom: 20,
   },
-  logoutText: {
-    color: COLORS.danger,
+  emptyContainer: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 40,
+    backgroundColor: COLORS.white,
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: 'rgba(18, 22, 32, 0.05)',
+    gap: 10,
+  },
+  emptyText: {
+    fontSize: 13,
+    color: COLORS.textMuted,
+    fontWeight: '600',
+    textAlign: 'center',
+    paddingHorizontal: 20,
   },
 });

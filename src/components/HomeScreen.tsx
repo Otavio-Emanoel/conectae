@@ -12,6 +12,14 @@ import { COLORS } from '../constants/colors';
 import { AnimateEntrance } from './ui/AnimateEntrance';
 import { SPRING_SPECS } from '../constants/motion';
 
+export interface CommentItem {
+  id: string;
+  author: string;
+  avatarColor: string;
+  time: string;
+  content: string;
+}
+
 export interface PostItem {
   id: string;
   author: string;
@@ -24,15 +32,21 @@ export interface PostItem {
   comments: number;
   shares: number;
   tags: string[];
+  commentsList?: CommentItem[];
 }
 
 interface HomeScreenProps {
   posts: PostItem[];
   searchQuery: string;
+  onPostPress: (postId: string) => void;
 }
 
 // Sub-component for individual post card to manage its own like spring animation state
-const PostCard: React.FC<{ post: PostItem; index: number }> = ({ post, index }) => {
+export const PostCard: React.FC<{ 
+  post: PostItem; 
+  index: number; 
+  onPress?: () => void;
+}> = ({ post, index, onPress }) => {
   const [liked, setLiked] = useState(false);
   const [likesCount, setLikesCount] = useState(post.likes);
   const heartScale = useSharedValue(1);
@@ -64,43 +78,51 @@ const PostCard: React.FC<{ post: PostItem; index: number }> = ({ post, index }) 
   return (
     <AnimateEntrance preset="slideUp" delay={200 + index * 100}>
       <View style={styles.card}>
-        {/* Card Header */}
-        <View style={styles.cardHeader}>
-          <View style={[styles.avatar, { backgroundColor: post.avatarColor }]}>
-            <Text style={styles.avatarText}>{post.author.substring(0, 2).toUpperCase()}</Text>
+        {/* Wrap header & content in a TouchableOpacity to view details */}
+        <TouchableOpacity 
+          onPress={onPress} 
+          activeOpacity={onPress ? 0.85 : 1.0} 
+          disabled={!onPress}
+          style={styles.cardPressableArea}
+        >
+          {/* Card Header */}
+          <View style={styles.cardHeader}>
+            <View style={[styles.avatar, { backgroundColor: post.avatarColor }]}>
+              <Text style={styles.avatarText}>{post.author.substring(0, 2).toUpperCase()}</Text>
+            </View>
+            <View style={styles.headerMeta}>
+              <Text style={styles.authorName}>{post.author}</Text>
+              <Text style={styles.authorRole}>{post.role} • {post.time}</Text>
+            </View>
+            <TouchableOpacity style={styles.moreButton} activeOpacity={0.6}>
+              <Feather name="more-horizontal" size={20} color={COLORS.textMuted} />
+            </TouchableOpacity>
           </View>
-          <View style={styles.headerMeta}>
-            <Text style={styles.authorName}>{post.author}</Text>
-            <Text style={styles.authorRole}>{post.role} • {post.time}</Text>
+
+          {/* Card Content */}
+          <Text style={styles.cardContent}>{post.content}</Text>
+
+          {/* Optional Image */}
+          {post.image && (
+            <View style={styles.cardImageContainer}>
+              <Image source={{ uri: post.image }} style={styles.cardImage} resizeMode="cover" />
+            </View>
+          )}
+
+          {/* Hashtags */}
+          {post.tags.length > 0 && (
+            <View style={styles.tagsRow}>
+              {post.tags.map(tag => (
+                <Text key={tag} style={styles.tagText}>#{tag}</Text>
+              ))}
+            </View>
+          )}
+
+          {/* Action Stats bar */}
+          <View style={styles.statsBar}>
+            <Text style={styles.statsText}>{likesCount} curtidas • {post.comments} comentários</Text>
           </View>
-          <TouchableOpacity style={styles.moreButton} activeOpacity={0.6}>
-            <Feather name="more-horizontal" size={20} color={COLORS.textMuted} />
-          </TouchableOpacity>
-        </View>
-
-        {/* Card Content */}
-        <Text style={styles.cardContent}>{post.content}</Text>
-
-        {/* Optional Image */}
-        {post.image && (
-          <View style={styles.cardImageContainer}>
-            <Image source={{ uri: post.image }} style={styles.cardImage} resizeMode="cover" />
-          </View>
-        )}
-
-        {/* Hashtags */}
-        {post.tags.length > 0 && (
-          <View style={styles.tagsRow}>
-            {post.tags.map(tag => (
-              <Text key={tag} style={styles.tagText}>#{tag}</Text>
-            ))}
-          </View>
-        )}
-
-        {/* Action Stats bar */}
-        <View style={styles.statsBar}>
-          <Text style={styles.statsText}>{likesCount} curtidas • {post.comments} comentários</Text>
-        </View>
+        </TouchableOpacity>
 
         {/* Action buttons */}
         <View style={styles.actionButtons}>
@@ -117,7 +139,7 @@ const PostCard: React.FC<{ post: PostItem; index: number }> = ({ post, index }) 
             </Text>
           </TouchableOpacity>
 
-          <TouchableOpacity style={styles.actionBtn} activeOpacity={0.7}>
+          <TouchableOpacity onPress={onPress} style={styles.actionBtn} activeOpacity={0.7} disabled={!onPress}>
             <Feather name="message-square" size={20} color={COLORS.primary} />
             <Text style={styles.actionBtnText}>Comentar</Text>
           </TouchableOpacity>
@@ -132,7 +154,7 @@ const PostCard: React.FC<{ post: PostItem; index: number }> = ({ post, index }) 
   );
 };
 
-export const HomeScreen: React.FC<HomeScreenProps> = ({ posts, searchQuery }) => {
+export const HomeScreen: React.FC<HomeScreenProps> = ({ posts, searchQuery, onPostPress }) => {
   const filteredPosts = posts.filter(post =>
     post.content.toLowerCase().includes(searchQuery.toLowerCase()) ||
     post.author.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -153,7 +175,12 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ posts, searchQuery }) =>
       <View style={styles.feedContainer}>
         {filteredPosts.length > 0 ? (
           filteredPosts.map((post, index) => (
-            <PostCard key={post.id} post={post} index={index} />
+            <PostCard 
+              key={post.id} 
+              post={post} 
+              index={index} 
+              onPress={() => onPostPress(post.id)}
+            />
           ))
         ) : (
           <AnimateEntrance preset="fade">
@@ -207,6 +234,9 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.02,
     shadowRadius: 8,
     elevation: 2,
+  },
+  cardPressableArea: {
+    width: '100%',
   },
   cardHeader: {
     flexDirection: 'row',
