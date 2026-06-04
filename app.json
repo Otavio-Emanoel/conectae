@@ -44,9 +44,6 @@
           "cameraPermission": "Permita que o CONECTAE acesse a câmera para tirar fotos e aplicar filtros.",
           "microphonePermission": "Permita que o CONECTAE acesse o microfone."
         }
-      ],
-      [
-        "react-native-webview"
       ]
     ]
   }
