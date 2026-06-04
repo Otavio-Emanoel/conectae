@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
+import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SplashScreen } from './src/components/SplashScreen';
 import { WelcomeScreen } from './src/components/WelcomeScreen';
 import { LoginScreen } from './src/components/LoginScreen';
@@ -88,17 +89,22 @@ export default function App() {
   const isMainScreen = currentScreen === 'main';
 
   return (
-    <View style={styles.container}>
-      <StatusBar 
-        style="dark" 
-        backgroundColor={isMainScreen ? '#FFFFFF' : COLORS.background} 
-      />
-      {renderScreen()}
-    </View>
+    <GestureHandlerRootView style={styles.gestureRoot}>
+      <View style={styles.container}>
+        <StatusBar 
+          style="dark" 
+          backgroundColor={isMainScreen ? '#FFFFFF' : COLORS.background} 
+        />
+        {renderScreen()}
+      </View>
+    </GestureHandlerRootView>
   );
 }
 
 const styles = StyleSheet.create({
+  gestureRoot: {
+    flex: 1,
+  },
   container: {
     flex: 1,
     backgroundColor: COLORS.background,

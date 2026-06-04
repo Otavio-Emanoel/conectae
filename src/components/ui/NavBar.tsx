@@ -1,13 +1,15 @@
 import React, { useEffect } from 'react';
 import { StyleSheet, View, TouchableOpacity, Dimensions, Platform } from 'react-native';
 import { Feather } from '@expo/vector-icons';
+import { GestureDetector, Gesture } from 'react-native-gesture-handler';
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
   withSpring,
   withTiming,
   withSequence,
-  Easing
+  Easing,
+  runOnJS
 } from 'react-native-reanimated';
 import { COLORS } from '../../constants/colors';
 import { SPRING_SPECS } from '../../constants/motion';
@@ -37,21 +39,19 @@ export const NavBar: React.FC<NavBarProps> = ({ activeIndex, onChangeTab }) => {
   const postIconScale = useSharedValue(1);
   const profileIconScale = useSharedValue(1);
 
+  // Keep track of the gesture dragging status
+  const isDragging = useSharedValue(false);
+  const startX = useSharedValue(0);
+
+  // Synchronize indicator position with activeIndex state when not dragging
   useEffect(() => {
-    // 1. Animate horizontal slide translation
-    indicatorTranslateX.value = withSpring(activeIndex * TAB_WIDTH, SPRING_SPECS.snappy);
+    if (!isDragging.value) {
+      indicatorTranslateX.value = withSpring(activeIndex * TAB_WIDTH, SPRING_SPECS.snappy);
+    }
+  }, [activeIndex]);
 
-    // 2. Animate the liquid/jelly squish effect during transition
-    scaleX.value = withSequence(
-      withTiming(1.35, { duration: 160, easing: Easing.bezier(0.25, 1, 0.5, 1) }),
-      withSpring(1, SPRING_SPECS.bouncy)
-    );
-    scaleY.value = withSequence(
-      withTiming(0.72, { duration: 160, easing: Easing.bezier(0.25, 1, 0.5, 1) }),
-      withSpring(1, SPRING_SPECS.bouncy)
-    );
-
-    // 3. Trigger scale pop animation on active icon
+  // Handle tap animations and active state pops
+  useEffect(() => {
     if (activeIndex === 0) {
       homeIconScale.value = withSequence(withTiming(1.3, { duration: 120 }), withSpring(1, SPRING_SPECS.bouncy));
     } else if (activeIndex === 1) {
@@ -60,6 +60,44 @@ export const NavBar: React.FC<NavBarProps> = ({ activeIndex, onChangeTab }) => {
       profileIconScale.value = withSequence(withTiming(1.3, { duration: 120 }), withSpring(1, SPRING_SPECS.bouncy));
     }
   }, [activeIndex]);
+
+  // Pan gesture to drag the active pill left/right
+  const panGesture = Gesture.Pan()
+    .onStart(() => {
+      isDragging.value = true;
+      startX.value = indicatorTranslateX.value;
+      
+      // Initial gooey scale on touch start
+      scaleX.value = withSpring(1.15, SPRING_SPECS.snappy);
+      scaleY.value = withSpring(0.9, SPRING_SPECS.snappy);
+    })
+    .onUpdate((event) => {
+      const nextX = startX.value + event.translationX;
+      // Clamp within navbar boundary [0, 2 * TAB_WIDTH]
+      indicatorTranslateX.value = Math.max(0, Math.min(TAB_WIDTH * 2, nextX));
+
+      // Dynamic gooey stretching based on drag velocity
+      const velocity = Math.abs(event.velocityX);
+      scaleX.value = 1.15 + Math.min(0.35, velocity / 3000);
+      scaleY.value = 0.9 - Math.min(0.2, velocity / 6000);
+    })
+    .onEnd((event) => {
+      isDragging.value = false;
+
+      // Find the closest tab center position
+      const currentX = indicatorTranslateX.value;
+      const targetTab = Math.max(0, Math.min(2, Math.round(currentX / TAB_WIDTH)));
+
+      // Snap indicator to closest tab center with spring
+      indicatorTranslateX.value = withSpring(targetTab * TAB_WIDTH, SPRING_SPECS.snappy);
+      
+      // Snap scales back to 1.0
+      scaleX.value = withSpring(1, SPRING_SPECS.bouncy);
+      scaleY.value = withSpring(1, SPRING_SPECS.bouncy);
+
+      // Trigger tab change callback
+      runOnJS(onChangeTab)(targetTab);
+    });
 
   // Animated styles for sliding & deformation
   const indicatorAnimatedStyle = useAnimatedStyle(() => {
@@ -86,13 +124,15 @@ export const NavBar: React.FC<NavBarProps> = ({ activeIndex, onChangeTab }) => {
   return (
     <View style={styles.container}>
       <View style={styles.navContent}>
-        {/* Animated Liquid Sliding Indicator Pill */}
-        <Animated.View
-          style={[
-            styles.indicator,
-            indicatorAnimatedStyle
-          ]}
-        />
+        {/* Animated Liquid Sliding & Draggable Indicator Pill */}
+        <GestureDetector gesture={panGesture}>
+          <Animated.View
+            style={[
+              styles.indicator,
+              indicatorAnimatedStyle
+            ]}
+          />
+        </GestureDetector>
 
         {/* Tab Buttons */}
         {tabs.map((tab, index) => {
@@ -150,7 +190,6 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.15,
     shadowRadius: 12,
     elevation: 8,
-    overflow: 'hidden',
   },
   indicator: {
     position: 'absolute',
@@ -159,6 +198,7 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.background, // neon yellow liquid pill
     borderRadius: PILL_HEIGHT / 2,
     left: (TAB_WIDTH - PILL_WIDTH) / 2,
+    zIndex: 1,
   },
   tabButton: {
     flex: 1,

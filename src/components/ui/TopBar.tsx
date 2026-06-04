@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { StyleSheet, View, Text, Image, TextInput, TouchableOpacity, Keyboard } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import Animated, {
@@ -13,9 +13,15 @@ import { SPRING_SPECS } from '../../constants/motion';
 
 interface TopBarProps {
   onSearch?: (text: string) => void;
+  rightIconType?: 'search' | 'menu';
+  onMenuPress?: () => void;
 }
 
-export const TopBar: React.FC<TopBarProps> = ({ onSearch }) => {
+export const TopBar: React.FC<TopBarProps> = ({ 
+  onSearch, 
+  rightIconType = 'search', 
+  onMenuPress 
+}) => {
   const [isSearchActive, setIsSearchActive] = useState(false);
   const [searchText, setSearchText] = useState('');
   const inputRef = useRef<TextInput>(null);
@@ -23,12 +29,18 @@ export const TopBar: React.FC<TopBarProps> = ({ onSearch }) => {
   // Animation values for the search input expansion
   const searchProgress = useSharedValue(0); // 0 = closed, 1 = open
 
+  // Icon rotation shared value
+  const iconRotation = useSharedValue(0);
+
+  useEffect(() => {
+    iconRotation.value = withSpring(rightIconType === 'menu' ? 180 : 0, SPRING_SPECS.snappy);
+  }, [rightIconType]);
+
   const handleOpenSearch = () => {
     setIsSearchActive(true);
     searchProgress.value = withSpring(1, SPRING_SPECS.snappy, (finished) => {
       if (finished && inputRef.current) {
         runOnJS(Keyboard.dismiss)(); // Reset keyboard state
-        // Focus the input on JS thread
         runOnJS((ref: any) => ref.current?.focus())(inputRef);
       }
     });
@@ -72,6 +84,26 @@ export const TopBar: React.FC<TopBarProps> = ({ onSearch }) => {
     };
   });
 
+  const iconWrapperStyle = useAnimatedStyle(() => {
+    return {
+      transform: [{ rotate: `${iconRotation.value}deg` }]
+    };
+  });
+
+  const searchIconStyle = useAnimatedStyle(() => {
+    return {
+      opacity: withTiming(rightIconType === 'search' ? 1 : 0, { duration: 150 }),
+      transform: [{ scale: withTiming(rightIconType === 'search' ? 1 : 0.4, { duration: 150 }) }]
+    };
+  });
+
+  const menuIconStyle = useAnimatedStyle(() => {
+    return {
+      opacity: withTiming(rightIconType === 'menu' ? 1 : 0, { duration: 150 }),
+      transform: [{ scale: withTiming(rightIconType === 'menu' ? 1 : 0.4, { duration: 150 }) }]
+    };
+  });
+
   return (
     <View style={styles.container}>
       {/* Default TopBar Content (Logo + Brand + Search Trigger) */}
@@ -86,11 +118,18 @@ export const TopBar: React.FC<TopBarProps> = ({ onSearch }) => {
         </View>
 
         <TouchableOpacity
-          onPress={handleOpenSearch}
+          onPress={rightIconType === 'menu' ? onMenuPress : handleOpenSearch}
           style={styles.iconButton}
           activeOpacity={0.6}
         >
-          <Feather name="search" size={22} color={COLORS.primary} />
+          <Animated.View style={[styles.iconContainer, iconWrapperStyle]}>
+            <Animated.View style={[StyleSheet.absoluteFill, styles.centerIcon, searchIconStyle]}>
+              <Feather name="search" size={22} color={COLORS.primary} />
+            </Animated.View>
+            <Animated.View style={[StyleSheet.absoluteFill, styles.centerIcon, menuIconStyle]}>
+              <Feather name="menu" size={22} color={COLORS.primary} />
+            </Animated.View>
+          </Animated.View>
         </TouchableOpacity>
       </Animated.View>
 
@@ -162,6 +201,15 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: 20,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  iconContainer: {
+    width: 24,
+    height: 24,
+    position: 'relative',
+  },
+  centerIcon: {
     justifyContent: 'center',
     alignItems: 'center',
   },

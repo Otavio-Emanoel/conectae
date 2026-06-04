@@ -9,10 +9,15 @@ import Animated, {
 } from 'react-native-reanimated';
 import { COLORS } from '../constants/colors';
 import { AnimateEntrance } from './ui/AnimateEntrance';
+import { Input } from './ui/Input';
+import { Button } from './ui/Button';
 
 interface SettingsScreenProps {
   onBack: () => void;
   onLogout?: () => void;
+  activeSection?: 'edit' | 'notifications' | 'privacy';
+  profileData?: { name: string; role: string; bio: string };
+  onSaveProfile?: (data: { name: string; role: string; bio: string }) => void;
 }
 
 // Custom Reanimated Switch component for a premium native feel
@@ -27,7 +32,7 @@ const CustomSwitch: React.FC<{ value: boolean; onValueChange: () => void }> = ({
     const backgroundColor = interpolateColor(
       switchTranslate.value,
       [2, 20],
-      ['rgba(18, 22, 32, 0.1)', COLORS.background] // slides to active yellow
+      ['rgba(18, 22, 32, 0.1)', COLORS.background]
     );
     return { backgroundColor };
   });
@@ -47,94 +52,221 @@ const CustomSwitch: React.FC<{ value: boolean; onValueChange: () => void }> = ({
   );
 };
 
-export const SettingsScreen: React.FC<SettingsScreenProps> = ({ onBack, onLogout }) => {
+export const SettingsScreen: React.FC<SettingsScreenProps> = ({ 
+  onBack, 
+  onLogout,
+  activeSection = 'edit',
+  profileData = { name: 'Otávio Emanoel', role: 'Desenvolvedor React Native', bio: 'Desenvolvedor React Native | Especialista em UX Fluido' },
+  onSaveProfile
+}) => {
+  // Edit Profile Form States
+  const [name, setName] = useState(profileData.name);
+  const [role, setRole] = useState(profileData.role);
+  const [bio, setBio] = useState(profileData.bio);
+
+  // Notification Toggles
   const [pushEnabled, setPushEnabled] = useState(true);
-  const [darkModeSim, setDarkModeSim] = useState(false);
+  const [emailEnabled, setEmailEnabled] = useState(false);
   const [soundsEnabled, setSoundsEnabled] = useState(true);
+  const [activityEnabled, setActivityEnabled] = useState(true);
+
+  // Privacy Toggles
+  const [privateProfile, setPrivateProfile] = useState(false);
+  const [showStatus, setShowStatus] = useState(true);
+  const [directMessages, setDirectMessages] = useState(true);
+
+  const handleSaveProfile = () => {
+    if (onSaveProfile) {
+      onSaveProfile({ name, role, bio });
+    }
+    onBack();
+  };
+
+  const renderSectionContent = () => {
+    switch (activeSection) {
+      case 'edit':
+        return (
+          <AnimateEntrance preset="slideUp" delay={100}>
+            <View style={styles.sectionCard}>
+              <Text style={styles.sectionFormTitle}>Editar Detalhes do Perfil</Text>
+              
+              <View style={styles.fieldSpacer}>
+                <Input
+                  label="Nome Completo"
+                  placeholder="Seu nome"
+                  iconName="user"
+                  value={name}
+                  onChangeText={setName}
+                />
+              </View>
+
+              <View style={styles.fieldSpacer}>
+                <Input
+                  label="Ocupação / Cargo"
+                  placeholder="Ex: Desenvolvedor Front-end"
+                  iconName="briefcase"
+                  value={role}
+                  onChangeText={setRole}
+                />
+              </View>
+
+              <View style={styles.fieldSpacer}>
+                <Input
+                  label="Biografia Curta"
+                  placeholder="Escreva algo sobre você..."
+                  iconName="info"
+                  value={bio}
+                  onChangeText={setBio}
+                  multiline={true}
+                  numberOfLines={4}
+                />
+              </View>
+
+              <Button
+                title="Salvar Alterações"
+                onPress={handleSaveProfile}
+                icon={<Feather name="check" size={18} color={COLORS.white} />}
+                style={styles.actionBtn}
+              />
+            </View>
+          </AnimateEntrance>
+        );
+
+      case 'notifications':
+        return (
+          <AnimateEntrance preset="slideUp" delay={100}>
+            <Text style={styles.groupHeader}>PREFERÊNCIAS DE ALERTAS</Text>
+            <View style={styles.sectionCard}>
+              <View style={styles.row}>
+                <View style={styles.rowLeft}>
+                  <Feather name="bell" size={20} color={COLORS.primary} style={styles.rowIcon} />
+                  <Text style={styles.rowText}>Notificações Push</Text>
+                </View>
+                <CustomSwitch value={pushEnabled} onValueChange={() => setPushEnabled(!pushEnabled)} />
+              </View>
+
+              <View style={styles.divider} />
+
+              <View style={styles.row}>
+                <View style={styles.rowLeft}>
+                  <Feather name="mail" size={20} color={COLORS.primary} style={styles.rowIcon} />
+                  <Text style={styles.rowText}>Resumos por E-mail</Text>
+                </View>
+                <CustomSwitch value={emailEnabled} onValueChange={() => setEmailEnabled(!emailEnabled)} />
+              </View>
+
+              <View style={styles.divider} />
+
+              <View style={styles.row}>
+                <View style={styles.rowLeft}>
+                  <Feather name="volume-2" size={20} color={COLORS.primary} style={styles.rowIcon} />
+                  <Text style={styles.rowText}>Efeitos Sonoros</Text>
+                </View>
+                <CustomSwitch value={soundsEnabled} onValueChange={() => setSoundsEnabled(!soundsEnabled)} />
+              </View>
+
+              <View style={styles.divider} />
+
+              <View style={styles.row}>
+                <View style={styles.rowLeft}>
+                  <Feather name="activity" size={20} color={COLORS.primary} style={styles.rowIcon} />
+                  <Text style={styles.rowText}>Alertas de Atividade</Text>
+                </View>
+                <CustomSwitch value={activityEnabled} onValueChange={() => setActivityEnabled(!activityEnabled)} />
+              </View>
+            </View>
+          </AnimateEntrance>
+        );
+
+      case 'privacy':
+        return (
+          <AnimateEntrance preset="slideUp" delay={100}>
+            <Text style={styles.groupHeader}>VISIBILIDADE DA CONTA</Text>
+            <View style={styles.sectionCard}>
+              <View style={styles.row}>
+                <View style={styles.rowLeft}>
+                  <Feather name="lock" size={20} color={COLORS.primary} style={styles.rowIcon} />
+                  <Text style={styles.rowText}>Perfil Privado</Text>
+                </View>
+                <CustomSwitch value={privateProfile} onValueChange={() => setPrivateProfile(!privateProfile)} />
+              </View>
+
+              <View style={styles.divider} />
+
+              <View style={styles.row}>
+                <View style={styles.rowLeft}>
+                  <Feather name="eye" size={20} color={COLORS.primary} style={styles.rowIcon} />
+                  <Text style={styles.rowText}>Mostrar Status Online</Text>
+                </View>
+                <CustomSwitch value={showStatus} onValueChange={() => setShowStatus(!showStatus)} />
+              </View>
+
+              <View style={styles.divider} />
+
+              <View style={styles.row}>
+                <View style={styles.rowLeft}>
+                  <Feather name="message-square" size={20} color={COLORS.primary} style={styles.rowIcon} />
+                  <Text style={styles.rowText}>Permitir DMs de Conexões</Text>
+                </View>
+                <CustomSwitch value={directMessages} onValueChange={() => setDirectMessages(!directMessages)} />
+              </View>
+            </View>
+
+            <Text style={styles.groupHeader}>SEGURANÇA</Text>
+            <View style={styles.sectionCard}>
+              <TouchableOpacity style={styles.rowButton} activeOpacity={0.6}>
+                <View style={styles.rowLeft}>
+                  <Feather name="shield" size={20} color={COLORS.primary} style={styles.rowIcon} />
+                  <Text style={styles.rowText}>Autenticação em Duas Etapas</Text>
+                </View>
+                <Feather name="chevron-right" size={20} color={COLORS.textMuted} />
+              </TouchableOpacity>
+              
+              <View style={styles.divider} />
+
+              <TouchableOpacity style={styles.rowButton} activeOpacity={0.6}>
+                <View style={styles.rowLeft}>
+                  <Feather name="slash" size={20} color={COLORS.primary} style={styles.rowIcon} />
+                  <Text style={styles.rowText}>Usuários Bloqueados</Text>
+                </View>
+                <Feather name="chevron-right" size={20} color={COLORS.textMuted} />
+              </TouchableOpacity>
+            </View>
+          </AnimateEntrance>
+        );
+    }
+  };
+
+  const getSectionTitle = () => {
+    switch (activeSection) {
+      case 'edit':
+        return 'Editar Perfil';
+      case 'notifications':
+        return 'Notificações';
+      case 'privacy':
+        return 'Privacidade & Segurança';
+      default:
+        return 'Configurações';
+    }
+  };
 
   return (
     <View style={styles.container}>
-      {/* Header with Back button */}
+      {/* Header bar */}
       <View style={styles.header}>
         <TouchableOpacity onPress={onBack} style={styles.backButton} activeOpacity={0.6}>
           <Feather name="arrow-left" size={24} color={COLORS.primary} />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Configurações</Text>
+        <Text style={styles.headerTitle}>{getSectionTitle()}</Text>
         <View style={styles.backButtonPlaceholder} />
       </View>
 
       <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
-        {/* Account preferences */}
-        <AnimateEntrance preset="slideUp" delay={100}>
-          <Text style={styles.sectionTitle}>PREFERÊNCIAS</Text>
-          <View style={styles.sectionCard}>
-            <View style={styles.row}>
-              <View style={styles.rowLeft}>
-                <Feather name="bell" size={20} color={COLORS.primary} style={styles.rowIcon} />
-                <Text style={styles.rowText}>Notificações Push</Text>
-              </View>
-              <CustomSwitch value={pushEnabled} onValueChange={() => setPushEnabled(!pushEnabled)} />
-            </View>
+        {renderSectionContent()}
 
-            <View style={styles.divider} />
-
-            <View style={styles.row}>
-              <View style={styles.rowLeft}>
-                <Feather name="moon" size={20} color={COLORS.primary} style={styles.rowIcon} />
-                <Text style={styles.rowText}>Modo Escuro (Simulado)</Text>
-              </View>
-              <CustomSwitch value={darkModeSim} onValueChange={() => setDarkModeSim(!darkModeSim)} />
-            </View>
-
-            <View style={styles.divider} />
-
-            <View style={styles.row}>
-              <View style={styles.rowLeft}>
-                <Feather name="volume-2" size={20} color={COLORS.primary} style={styles.rowIcon} />
-                <Text style={styles.rowText}>Efeitos Sonoros</Text>
-              </View>
-              <CustomSwitch value={soundsEnabled} onValueChange={() => setSoundsEnabled(!soundsEnabled)} />
-            </View>
-          </View>
-        </AnimateEntrance>
-
-        {/* Account settings */}
-        <AnimateEntrance preset="slideUp" delay={200}>
-          <Text style={styles.sectionTitle}>CONTA & SEGURANÇA</Text>
-          <View style={styles.sectionCard}>
-            <TouchableOpacity style={styles.rowButton} activeOpacity={0.6}>
-              <View style={styles.rowLeft}>
-                <Feather name="lock" size={20} color={COLORS.primary} style={styles.rowIcon} />
-                <Text style={styles.rowText}>Alterar Senha</Text>
-              </View>
-              <Feather name="chevron-right" size={20} color={COLORS.textMuted} />
-            </TouchableOpacity>
-
-            <View style={styles.divider} />
-
-            <TouchableOpacity style={styles.rowButton} activeOpacity={0.6}>
-              <View style={styles.rowLeft}>
-                <Feather name="eye-off" size={20} color={COLORS.primary} style={styles.rowIcon} />
-                <Text style={styles.rowText}>Contas Bloqueadas</Text>
-              </View>
-              <Feather name="chevron-right" size={20} color={COLORS.textMuted} />
-            </TouchableOpacity>
-
-            <View style={styles.divider} />
-
-            <TouchableOpacity style={styles.rowButton} activeOpacity={0.6}>
-              <View style={styles.rowLeft}>
-                <Feather name="info" size={20} color={COLORS.primary} style={styles.rowIcon} />
-                <Text style={styles.rowText}>Termos de Serviço</Text>
-              </View>
-              <Feather name="chevron-right" size={20} color={COLORS.textMuted} />
-            </TouchableOpacity>
-          </View>
-        </AnimateEntrance>
-
-        {/* Logout Action */}
+        {/* Log Out option listed at bottom of settings */}
         {onLogout && (
-          <AnimateEntrance preset="slideUp" delay={300}>
+          <AnimateEntrance preset="slideUp" delay={250}>
             <TouchableOpacity 
               onPress={onLogout} 
               style={[styles.sectionCard, styles.logoutCard]} 
@@ -188,18 +320,26 @@ const styles = StyleSheet.create({
     paddingTop: 20,
     paddingBottom: 24,
   },
-  sectionTitle: {
+  groupHeader: {
     fontSize: 12,
     fontWeight: '800',
     color: COLORS.textMuted,
     letterSpacing: 1,
     marginBottom: 8,
     marginLeft: 4,
+    marginTop: 8,
+  },
+  sectionFormTitle: {
+    fontSize: 16,
+    fontWeight: '800',
+    color: COLORS.primary,
+    marginBottom: 20,
   },
   sectionCard: {
     backgroundColor: COLORS.white,
-    borderRadius: 20,
-    paddingHorizontal: 16,
+    borderRadius: 24,
+    paddingHorizontal: 20,
+    paddingVertical: 10,
     borderWidth: 1,
     borderColor: 'rgba(18, 22, 32, 0.05)',
     shadowColor: COLORS.primary,
@@ -217,13 +357,13 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingVertical: 14,
+    paddingVertical: 16,
   },
   rowButton: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingVertical: 14,
+    paddingVertical: 16,
   },
   rowLeft: {
     flexDirection: 'row',
@@ -244,6 +384,13 @@ const styles = StyleSheet.create({
     height: 1,
     backgroundColor: 'rgba(18, 22, 32, 0.06)',
     width: '100%',
+  },
+  fieldSpacer: {
+    marginBottom: 4,
+  },
+  actionBtn: {
+    marginTop: 10,
+    marginBottom: 10,
   },
   switchTrack: {
     width: 42,

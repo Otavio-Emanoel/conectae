@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
-import { StyleSheet, View, Text, ScrollView, TouchableOpacity, Image, Platform } from 'react-native';
+import { StyleSheet, View, Text, ScrollView, TouchableOpacity, Image, Platform, Alert } from 'react-native';
 import { Feather } from '@expo/vector-icons';
+import * as ImagePicker from 'expo-image-picker';
 import { COLORS } from '../constants/colors';
 import { Input } from './ui/Input';
 import { Button } from './ui/Button';
@@ -14,15 +15,36 @@ export const CreatePostScreen: React.FC<CreatePostScreenProps> = ({ onSubmitPost
   const [postText, setPostText] = useState('');
   const [tagsInput, setTagsInput] = useState('');
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
-  const [showImageSelector, setShowImageSelector] = useState(false);
 
-  // Premium stock photo simulator list
-  const imagesList = [
-    { id: '1', name: 'Trabalho', url: 'https://images.unsplash.com/photo-1504384308090-c894fdcc538d?w=800&auto=format&fit=crop&q=60' },
-    { id: '2', name: 'Código', url: 'https://images.unsplash.com/photo-1555066931-4365d14bab8c?w=800&auto=format&fit=crop&q=60' },
-    { id: '3', name: 'Design', url: 'https://images.unsplash.com/photo-1512941937669-90a1b58e7e9c?w=800&auto=format&fit=crop&q=60' },
-    { id: '4', name: 'Reunião', url: 'https://images.unsplash.com/photo-1522071820081-009f0129c71c?w=800&auto=format&fit=crop&q=60' }
-  ];
+  const handleSelectImage = async () => {
+    // Request media library permission
+    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    
+    if (status !== 'granted') {
+      Alert.alert(
+        'Permissão necessária',
+        'Precisamos de acesso à sua galeria de fotos para adicionar imagens às publicações.',
+        [{ text: 'OK' }]
+      );
+      return;
+    }
+
+    try {
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        allowsEditing: true,
+        aspect: [16, 9],
+        quality: 0.8,
+      });
+
+      if (!result.canceled && result.assets && result.assets.length > 0) {
+        setSelectedImage(result.assets[0].uri);
+      }
+    } catch (error) {
+      console.log('Error picking image: ', error);
+      Alert.alert('Erro', 'Ocorreu um problema ao abrir sua galeria de fotos.');
+    }
+  };
 
   const handlePublish = () => {
     if (!postText.trim()) return;
@@ -37,7 +59,6 @@ export const CreatePostScreen: React.FC<CreatePostScreenProps> = ({ onSubmitPost
     setPostText('');
     setTagsInput('');
     setSelectedImage(null);
-    setShowImageSelector(false);
   };
 
   return (
@@ -61,7 +82,7 @@ export const CreatePostScreen: React.FC<CreatePostScreenProps> = ({ onSubmitPost
             />
           </View>
 
-          {/* Image Selector Simulator */}
+          {/* Gallery Image Selector */}
           <View style={styles.imageSelectorContainer}>
             {selectedImage ? (
               <View style={styles.previewContainer}>
@@ -77,37 +98,12 @@ export const CreatePostScreen: React.FC<CreatePostScreenProps> = ({ onSubmitPost
             ) : (
               <TouchableOpacity
                 style={styles.addImageBtn}
-                onPress={() => setShowImageSelector(!showImageSelector)}
+                onPress={handleSelectImage}
                 activeOpacity={0.7}
               >
                 <Feather name="image" size={20} color={COLORS.primary} />
-                <Text style={styles.addImageText}>Adicionar Foto à Publicação</Text>
+                <Text style={styles.addImageText}>Selecionar Foto da Galeria</Text>
               </TouchableOpacity>
-            )}
-
-            {/* Gallery list */}
-            {showImageSelector && !selectedImage && (
-              <View style={styles.galleryContainer}>
-                <Text style={styles.galleryTitle}>Escolha uma foto da galeria:</Text>
-                <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.galleryScroll}>
-                  {imagesList.map(img => (
-                    <TouchableOpacity
-                      key={img.id}
-                      style={styles.galleryItem}
-                      onPress={() => {
-                        setSelectedImage(img.url);
-                        setShowImageSelector(false);
-                      }}
-                      activeOpacity={0.8}
-                    >
-                      <Image source={{ uri: img.url }} style={styles.galleryImage} />
-                      <View style={styles.galleryImageLabelContainer}>
-                        <Text style={styles.galleryImageLabel}>{img.name}</Text>
-                      </View>
-                    </TouchableOpacity>
-                  ))}
-                </ScrollView>
-              </View>
             )}
           </View>
 
@@ -217,48 +213,6 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(18, 22, 32, 0.7)',
     justifyContent: 'center',
     alignItems: 'center',
-  },
-  galleryContainer: {
-    marginTop: 10,
-    backgroundColor: 'rgba(18, 22, 32, 0.03)',
-    borderRadius: 16,
-    padding: 12,
-  },
-  galleryTitle: {
-    fontSize: 12,
-    fontWeight: '700',
-    color: COLORS.textMuted,
-    marginBottom: 8,
-  },
-  galleryScroll: {
-    gap: 10,
-  },
-  galleryItem: {
-    position: 'relative',
-    width: 100,
-    height: 80,
-    borderRadius: 10,
-    overflow: 'hidden',
-    borderWidth: 1.5,
-    borderColor: COLORS.inputBorder,
-  },
-  galleryImage: {
-    width: '100%',
-    height: '100%',
-  },
-  galleryImageLabelContainer: {
-    position: 'absolute',
-    bottom: 0,
-    left: 0,
-    right: 0,
-    backgroundColor: 'rgba(18, 22, 32, 0.6)',
-    paddingVertical: 2,
-    alignItems: 'center',
-  },
-  galleryImageLabel: {
-    color: COLORS.white,
-    fontSize: 10,
-    fontWeight: '700',
   },
   publishBtn: {
     marginTop: 8,

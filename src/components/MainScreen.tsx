@@ -58,14 +58,20 @@ const INITIAL_POSTS: PostItem[] = [
 export const MainScreen: React.FC<MainScreenProps> = ({ onLogout }) => {
   const [activeTab, setActiveTab] = useState(0); // 0 = Home, 1 = Post, 2 = Profile
   const [profileSubScreen, setProfileSubScreen] = useState<'profile' | 'settings'>('profile');
+  const [settingsSection, setSettingsSection] = useState<'edit' | 'notifications' | 'privacy'>('edit');
   const [searchQuery, setSearchQuery] = useState('');
   const [posts, setPosts] = useState<PostItem[]>(INITIAL_POSTS);
+
+  // Dynamic user profile fields
+  const [profileName, setProfileName] = useState('Otávio Emanoel');
+  const [profileRole, setProfileRole] = useState('Desenvolvedor React Native');
+  const [profileBio, setProfileBio] = useState('Desenvolvedor React Native | Especialista em UX Fluido');
 
   const handleCreatePost = (text: string, tags: string[], image: string | null) => {
     const newPost: PostItem = {
       id: String(Date.now()),
-      author: 'Otávio Emanoel',
-      role: 'Desenvolvedor React Native',
+      author: profileName,
+      role: profileRole,
       avatarColor: '#121620',
       time: 'Agora mesmo',
       content: text,
@@ -86,6 +92,11 @@ export const MainScreen: React.FC<MainScreenProps> = ({ onLogout }) => {
     }
   };
 
+  const handleNavigateToSettings = (section: 'edit' | 'notifications' | 'privacy') => {
+    setSettingsSection(section);
+    setProfileSubScreen('settings');
+  };
+
   const renderActiveTabContent = () => {
     switch (activeTab) {
       case 0:
@@ -96,6 +107,13 @@ export const MainScreen: React.FC<MainScreenProps> = ({ onLogout }) => {
         if (profileSubScreen === 'settings') {
           return (
             <SettingsScreen
+              activeSection={settingsSection}
+              profileData={{ name: profileName, role: profileRole, bio: profileBio }}
+              onSaveProfile={({ name, role, bio }) => {
+                setProfileName(name);
+                setProfileRole(role);
+                setProfileBio(bio);
+              }}
               onBack={() => setProfileSubScreen('profile')}
               onLogout={onLogout}
             />
@@ -103,8 +121,9 @@ export const MainScreen: React.FC<MainScreenProps> = ({ onLogout }) => {
         }
         return (
           <ProfileScreen
+            profileData={{ name: profileName, role: profileRole, bio: profileBio }}
+            onNavigateToSettings={handleNavigateToSettings}
             onLogout={onLogout}
-            onNavigateToSettings={() => setProfileSubScreen('settings')}
           />
         );
       default:
@@ -116,8 +135,14 @@ export const MainScreen: React.FC<MainScreenProps> = ({ onLogout }) => {
 
   return (
     <SafeAreaView style={styles.container}>
-      {/* Render TopBar only if not in Settings sub-screen */}
-      {!isSettingsActive && <TopBar onSearch={(text) => setSearchQuery(text)} />}
+      {/* Render TopBar only if not on Settings sub-screen */}
+      {!isSettingsActive && (
+        <TopBar 
+          onSearch={(text) => setSearchQuery(text)} 
+          rightIconType={activeTab === 2 ? 'menu' : 'search'}
+          onMenuPress={() => handleNavigateToSettings('edit')}
+        />
+      )}
 
       {/* Main Content Area */}
       <KeyboardAvoidingView

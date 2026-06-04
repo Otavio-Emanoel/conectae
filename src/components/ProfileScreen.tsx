@@ -6,10 +6,15 @@ import { AnimateEntrance } from './ui/AnimateEntrance';
 
 interface ProfileScreenProps {
   onLogout?: () => void;
-  onNavigateToSettings: () => void;
+  onNavigateToSettings: (section: 'edit' | 'notifications' | 'privacy') => void;
+  profileData: { name: string; role: string; bio: string };
 }
 
-export const ProfileScreen: React.FC<ProfileScreenProps> = ({ onLogout, onNavigateToSettings }) => {
+export const ProfileScreen: React.FC<ProfileScreenProps> = ({ 
+  onLogout, 
+  onNavigateToSettings,
+  profileData
+}) => {
   return (
     <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
       {/* Profile Info Header Card */}
@@ -24,8 +29,9 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({ onLogout, onNaviga
             </View>
           </View>
 
-          <Text style={styles.profileName}>Otávio Emanoel</Text>
-          <Text style={styles.profileBio}>Desenvolvedor React Native | Especialista em UX Fluido</Text>
+          <Text style={styles.profileName}>{profileData.name}</Text>
+          <Text style={styles.profileRole}>{profileData.role}</Text>
+          <Text style={styles.profileBio}>{profileData.bio}</Text>
 
           {/* Profile Statistics */}
           <View style={styles.statsRow}>
@@ -50,7 +56,7 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({ onLogout, onNaviga
       {/* Settings / Actions List */}
       <View style={styles.settingsSection}>
         <AnimateEntrance preset="slideUp" delay={200}>
-          <TouchableOpacity onPress={onNavigateToSettings} style={styles.settingItem} activeOpacity={0.6}>
+          <TouchableOpacity onPress={() => onNavigateToSettings('edit')} style={styles.settingItem} activeOpacity={0.6}>
             <View style={styles.settingLeft}>
               <Feather name="edit-3" size={20} color={COLORS.primary} />
               <Text style={styles.settingText}>Editar Perfil</Text>
@@ -60,7 +66,7 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({ onLogout, onNaviga
         </AnimateEntrance>
 
         <AnimateEntrance preset="slideUp" delay={275}>
-          <TouchableOpacity onPress={onNavigateToSettings} style={styles.settingItem} activeOpacity={0.6}>
+          <TouchableOpacity onPress={() => onNavigateToSettings('notifications')} style={styles.settingItem} activeOpacity={0.6}>
             <View style={styles.settingLeft}>
               <Feather name="bell" size={20} color={COLORS.primary} />
               <Text style={styles.settingText}>Configurações de Notificações</Text>
@@ -70,7 +76,7 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({ onLogout, onNaviga
         </AnimateEntrance>
 
         <AnimateEntrance preset="slideUp" delay={350}>
-          <TouchableOpacity onPress={onNavigateToSettings} style={styles.settingItem} activeOpacity={0.6}>
+          <TouchableOpacity onPress={() => onNavigateToSettings('privacy')} style={styles.settingItem} activeOpacity={0.6}>
             <View style={styles.settingLeft}>
               <Feather name="shield" size={20} color={COLORS.primary} />
               <Text style={styles.settingText}>Privacidade e Segurança</Text>
@@ -148,11 +154,18 @@ const styles = StyleSheet.create({
     fontWeight: '800',
     color: COLORS.primary,
   },
-  profileBio: {
+  profileRole: {
     fontSize: 14,
+    color: COLORS.primary,
+    fontWeight: '700',
+    marginTop: 4,
+    textAlign: 'center',
+  },
+  profileBio: {
+    fontSize: 13,
     color: COLORS.textMuted,
     textAlign: 'center',
-    marginTop: 6,
+    marginTop: 8,
     fontWeight: '600',
     paddingHorizontal: 12,
     lineHeight: 18,
