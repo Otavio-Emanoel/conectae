@@ -13,7 +13,11 @@
       "backgroundColor": "#ffffff"
     },
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "infoPlist": {
+        "NSCameraUsageDescription": "Permita que o CONECTAE acesse a câmera para tirar fotos e aplicar filtros.",
+        "NSMicrophoneUsageDescription": "Permita que o CONECTAE acesse o microfone."
+      }
     },
     "android": {
       "adaptiveIcon": {
@@ -21,7 +25,13 @@
         "backgroundColor": "#ffffff"
       },
       "edgeToEdgeEnabled": true,
-      "predictiveBackGestureEnabled": false
+      "predictiveBackGestureEnabled": false,
+      "permissions": [
+        "android.permission.CAMERA",
+        "android.permission.RECORD_AUDIO",
+        "android.permission.INTERNET",
+        "android.permission.MODIFY_AUDIO_SETTINGS"
+      ]
     },
     "web": {
       "favicon": "./assets/favicon.png"
@@ -31,9 +41,12 @@
       [
         "expo-camera",
         {
-          "cameraPermission": "Permita que o CONECTAE acesse a câmera para tirar fotos.",
+          "cameraPermission": "Permita que o CONECTAE acesse a câmera para tirar fotos e aplicar filtros.",
           "microphonePermission": "Permita que o CONECTAE acesse o microfone."
         }
+      ],
+      [
+        "react-native-webview"
       ]
     ]
   }
