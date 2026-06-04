@@ -79,7 +79,7 @@ export default function App() {
             duration={500} 
             style={styles.screenWrapper}
           >
-            <MainScreen />
+            <MainScreen onLogout={() => setCurrentScreen('welcome')} />
           </AnimateEntrance>
         );
     }
