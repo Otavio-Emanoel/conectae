@@ -18,9 +18,10 @@ import { Button } from './ui/Button';
 interface SignUpScreenProps {
   onNavigateToLogin: () => void;
   onBack?: () => void;
+  onSubmitSuccess?: () => void;
 }
 
-export const SignUpScreen: React.FC<SignUpScreenProps> = ({ onNavigateToLogin, onBack }) => {
+export const SignUpScreen: React.FC<SignUpScreenProps> = ({ onNavigateToLogin, onBack, onSubmitSuccess }) => {
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -118,7 +119,10 @@ export const SignUpScreen: React.FC<SignUpScreenProps> = ({ onNavigateToLogin, o
         <AnimateEntrance preset="slideUp" delay={650} duration={500}>
           <Button 
             title="Cadastrar" 
-            onPress={() => console.log('Signup press with:', name, email, password, confirmPassword)} 
+            onPress={() => {
+              console.log('Signup press with:', name, email, password, confirmPassword);
+              if (onSubmitSuccess) onSubmitSuccess();
+            }} 
             style={styles.submitBtn}
           />
         </AnimateEntrance>

@@ -5,10 +5,11 @@ import { SplashScreen } from './src/components/SplashScreen';
 import { WelcomeScreen } from './src/components/WelcomeScreen';
 import { LoginScreen } from './src/components/LoginScreen';
 import { SignUpScreen } from './src/components/SignUpScreen';
+import { MainScreen } from './src/components/MainScreen';
 import { COLORS } from './src/constants/colors';
 import { AnimateEntrance } from './src/components/ui/AnimateEntrance';
 
-type ScreenState = 'splash' | 'welcome' | 'login' | 'signup';
+type ScreenState = 'splash' | 'welcome' | 'login' | 'signup' | 'main';
 
 export default function App() {
   const [currentScreen, setCurrentScreen] = useState<ScreenState>('splash');
@@ -51,6 +52,7 @@ export default function App() {
             <LoginScreen 
               onNavigateToSignUp={() => setCurrentScreen('signup')} 
               onBack={() => setCurrentScreen('welcome')}
+              onSubmitSuccess={() => setCurrentScreen('main')}
             />
           </AnimateEntrance>
         );
@@ -65,15 +67,32 @@ export default function App() {
             <SignUpScreen 
               onNavigateToLogin={() => setCurrentScreen('login')}
               onBack={() => setCurrentScreen('welcome')}
+              onSubmitSuccess={() => setCurrentScreen('main')}
             />
+          </AnimateEntrance>
+        );
+      case 'main':
+        return (
+          <AnimateEntrance 
+            key="main-screen-wrapper" 
+            preset="fade" 
+            duration={500} 
+            style={styles.screenWrapper}
+          >
+            <MainScreen />
           </AnimateEntrance>
         );
     }
   };
 
+  const isMainScreen = currentScreen === 'main';
+
   return (
     <View style={styles.container}>
-      <StatusBar style="dark" backgroundColor={COLORS.background} />
+      <StatusBar 
+        style="dark" 
+        backgroundColor={isMainScreen ? '#FFFFFF' : COLORS.background} 
+      />
       {renderScreen()}
     </View>
   );

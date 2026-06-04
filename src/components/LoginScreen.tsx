@@ -18,9 +18,10 @@ import { Button } from './ui/Button';
 interface LoginScreenProps {
   onNavigateToSignUp: () => void;
   onBack?: () => void;
+  onSubmitSuccess?: () => void;
 }
 
-export const LoginScreen: React.FC<LoginScreenProps> = ({ onNavigateToSignUp, onBack }) => {
+export const LoginScreen: React.FC<LoginScreenProps> = ({ onNavigateToSignUp, onBack, onSubmitSuccess }) => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
 
@@ -102,7 +103,10 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onNavigateToSignUp, on
         <AnimateEntrance preset="slideUp" delay={650} duration={500}>
           <Button
             title="Entrar"
-            onPress={() => console.log('Login press with:', email, password)}
+            onPress={() => {
+              console.log('Login press with:', email, password);
+              if (onSubmitSuccess) onSubmitSuccess();
+            }}
             icon={<Feather name="arrow-right" size={18} color={COLORS.white} />}
             style={styles.submitBtn}
           />
