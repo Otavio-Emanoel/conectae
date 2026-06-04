@@ -125,7 +125,10 @@ export const MainScreen: React.FC<MainScreenProps> = ({ onLogout }) => {
   const sidebarProgress = useSharedValue(0);
 
   // Camera state & shared values
+  // isCameraActive tracks if the camera was intentionally opened, but the
+  // WebView always stays mounted so FaceMesh doesn't reload between opens.
   const [isCameraActive, setIsCameraActive] = useState(false);
+  const [cameraEverOpened, setCameraEverOpened] = useState(false);
   const cameraProgress = useSharedValue(0);
   const cameraStartX = useSharedValue(0);
 
@@ -225,6 +228,7 @@ export const MainScreen: React.FC<MainScreenProps> = ({ onLogout }) => {
       cameraStartX.value = cameraProgress.value;
       if (cameraStartX.value === 0) {
         runOnJS(setIsCameraActive)(true);
+        runOnJS(setCameraEverOpened)(true);
       }
     })
     .onUpdate((event) => {
@@ -247,6 +251,7 @@ export const MainScreen: React.FC<MainScreenProps> = ({ onLogout }) => {
         if (progress > 0.35 || velocityX < -500) {
           cameraProgress.value = withSpring(1, SPRING_SPECS.snappy);
           runOnJS(setIsCameraActive)(true);
+          runOnJS(setCameraEverOpened)(true);
         } else {
           cameraProgress.value = withTiming(0, { duration: 200 }, (finished) => {
             if (finished) {
@@ -486,9 +491,14 @@ export const MainScreen: React.FC<MainScreenProps> = ({ onLogout }) => {
           </View>
         )}
 
-        {/* Camera Screen Overlay (zIndex 100) */}
-        {(isCameraActive || cameraProgress.value > 0) && (
-          <Animated.View style={[StyleSheet.absoluteFillObject, cameraStyle, { zIndex: 100 }]}>
+        {/* Camera Screen — always mounted so WebView/FaceMesh stay in memory.
+            Hidden when not active via translateX (off-screen to the right).
+            pointer-events blocked when not active to prevent touch-through. */}
+        {cameraEverOpened && (
+          <Animated.View
+            style={[StyleSheet.absoluteFillObject, cameraStyle, { zIndex: 100 }]}
+            pointerEvents={isCameraActive ? 'auto' : 'none'}
+          >
             <CameraScreen onClose={handleCloseCamera} />
           </Animated.View>
         )}

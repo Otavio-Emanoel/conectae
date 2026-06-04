@@ -252,13 +252,14 @@ export const CameraScreen: React.FC<CameraScreenProps> = ({ onClose }) => {
     const status   = document.getElementById('status');
     const statusTx = document.getElementById('statusText');
 
-    let activeFilter = 'normal';
-    let facingMode   = 'user';
+    let activeFilter  = 'normal';
+    let facingMode    = 'user';
     let currentStream = null;
-    let faceMesh     = null;
-    let rafId        = null;
-    let meshReady    = false;
+    let faceMesh      = null;
+    let rafId         = null;
+    let meshReady     = false;
     let lastLandmarks = null;
+    let isFlipping    = false;  // true while swapping cameras — skip status overlay
 
     // ── Message handler from React Native ─────────────────────────────────────
     document.addEventListener('message', onRNMessage);   // Android
@@ -272,6 +273,7 @@ export const CameraScreen: React.FC<CameraScreenProps> = ({ onClose }) => {
           console.log('Filter changed to:', activeFilter);
         } else if (data.type === 'flip') {
           facingMode = facingMode === 'user' ? 'environment' : 'user';
+          isFlipping = true;
           restartCamera();
         } else if (data.type === 'capture') {
           const dataUrl = canvas.toDataURL('image/jpeg', 0.85);
@@ -386,8 +388,11 @@ export const CameraScreen: React.FC<CameraScreenProps> = ({ onClose }) => {
 
     // ── Camera startup ────────────────────────────────────────────────────────
     function startCamera() {
-      statusTx.textContent = 'Acessando câmera…';
-      status.style.display = 'flex';
+      // Only show the loading overlay on the very first start, not on flips
+      if (!isFlipping) {
+        statusTx.textContent = 'Acessando câmera…';
+        status.style.display = 'flex';
+      }
 
       const constraints = {
         video: {
@@ -400,39 +405,48 @@ export const CameraScreen: React.FC<CameraScreenProps> = ({ onClose }) => {
 
       navigator.mediaDevices.getUserMedia(constraints)
         .then(stream => {
-          console.log('Camera stream acquired.');
+          console.log('Camera stream acquired, flip:', isFlipping);
           currentStream = stream;
           video.srcObject = stream;
           video.onloadedmetadata = () => {
             video.play().then(() => {
               console.log('Video playing. Resolution:', video.videoWidth, 'x', video.videoHeight);
-              initFaceMesh();
+              if (isFlipping) {
+                // Model is already loaded — just restart the render loop
+                isFlipping = false;
+                startRenderLoop();
+              } else {
+                initFaceMesh();
+              }
             }).catch(err => {
+              isFlipping = false;
               console.error('video.play() failed:', err.message);
               statusTx.textContent = 'Erro ao reproduzir vídeo.';
             });
           };
         })
         .catch(err => {
+          isFlipping = false;
           console.error('getUserMedia error:', err.name, err.message);
           statusTx.textContent = 'Câmera negada: ' + err.message;
+          if (!meshReady) status.style.display = 'flex';
         });
     }
 
-    function stopCamera() {
+    function stopCamera(keepLandmarks) {
       if (rafId) { cancelAnimationFrame(rafId); rafId = null; }
       if (currentStream) {
         currentStream.getTracks().forEach(t => t.stop());
         currentStream = null;
       }
       video.srcObject = null;
-      lastLandmarks = null;
+      if (!keepLandmarks) lastLandmarks = null;
     }
 
     function restartCamera() {
-      console.log('Restarting camera, facing:', facingMode);
-      stopCamera();
-      // Small delay so the previous stream fully releases
+      console.log('Restarting camera, facing:', facingMode, '| flip mode:', isFlipping);
+      stopCamera(true); // keep last landmarks so AR doesn't flicker to empty
+      // Give the OS ~300ms to fully release the previous camera hardware
       setTimeout(startCamera, 300);
     }
 
