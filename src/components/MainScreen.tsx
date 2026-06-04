@@ -15,12 +15,15 @@ import Animated, {
   useAnimatedStyle,
   withSpring,
   withTiming,
-  runOnJS
+  runOnJS,
+  FadeInUp,
+  FadeOutUp
 } from 'react-native-reanimated';
 import { GestureDetector, Gesture } from 'react-native-gesture-handler';
 import { TopBar } from './ui/TopBar';
 import { NavBar } from './ui/NavBar';
 import { COLORS } from '../constants/colors';
+import { GestureOverlay, GestureNavEvent } from './GestureOverlay';
 import { AnimateEntrance } from './ui/AnimateEntrance';
 import { HomeScreen, PostItem, CommentItem } from './HomeScreen';
 import { CreatePostScreen } from './CreatePostScreen';
@@ -131,6 +134,80 @@ export const MainScreen: React.FC<MainScreenProps> = ({ onLogout }) => {
   const [cameraEverOpened, setCameraEverOpened] = useState(false);
   const cameraProgress = useSharedValue(0);
   const cameraStartX = useSharedValue(0);
+
+  // Toast state for gesture confirmation feedback
+  const [toastMessage, setToastMessage] = useState<string | null>(null);
+  const toastTimeoutRef = React.useRef<NodeJS.Timeout | null>(null);
+  const [scrollTrigger, setScrollTrigger] = useState<{ direction: 'up' | 'down'; timestamp: number } | null>(null);
+
+  React.useEffect(() => {
+    return () => {
+      if (toastTimeoutRef.current) {
+        clearTimeout(toastTimeoutRef.current);
+      }
+    };
+  }, []);
+
+  const showToast = (message: string) => {
+    if (toastTimeoutRef.current) {
+      clearTimeout(toastTimeoutRef.current);
+    }
+    setToastMessage(message);
+    toastTimeoutRef.current = setTimeout(() => {
+      setToastMessage(null);
+    }, 1500);
+  };
+
+  const handleGestureNavigation = (gesture: GestureNavEvent) => {
+    if (isCameraActive) return;
+
+    // Handle scroll gestures
+    if (gesture === 'scroll_up' || gesture === 'scroll_down') {
+      const direction = gesture === 'scroll_up' ? 'up' : 'down';
+      setScrollTrigger({ direction, timestamp: Date.now() });
+      showToast(gesture === 'scroll_up' ? '✊ Rolando para Cima' : '🖐️ Rolando para Baixo');
+      return;
+    }
+
+    let targetTab = activeTab;
+    let desc = '';
+
+    switch (gesture) {
+      case 'tab0':
+        targetTab = 0;
+        desc = '☝️ Home';
+        break;
+      case 'tab1':
+        targetTab = 1;
+        desc = '✌️ Novo Post';
+        break;
+      case 'tab2':
+        targetTab = 2;
+        desc = '🤟 Perfil';
+        break;
+      case 'next':
+        targetTab = (activeTab + 1) % 3;
+        desc = '👈 Próxima Aba';
+        break;
+      case 'prev':
+        targetTab = (activeTab - 1 + 3) % 3;
+        desc = '👉 Aba Anterior';
+        break;
+    }
+
+    // Always close details to show tab content
+    setSelectedPostId(null);
+
+    if (targetTab !== activeTab) {
+      handleTabChange(targetTab);
+    } else {
+      if (targetTab === 2 && profileSubScreen === 'settings') {
+        setProfileSubScreen('profile');
+      }
+    }
+
+    showToast(`Gesto: ${desc}`);
+  };
 
   // Dynamic user profile fields
   const [profileName, setProfileName] = useState('Otávio Emanoel');
@@ -277,7 +354,14 @@ export const MainScreen: React.FC<MainScreenProps> = ({ onLogout }) => {
   const renderActiveTabContent = () => {
     switch (activeTab) {
       case 0:
-        return <HomeScreen posts={posts} searchQuery={searchQuery} onPostPress={(id) => setSelectedPostId(id)} />;
+        return (
+          <HomeScreen 
+            posts={posts} 
+            searchQuery={searchQuery} 
+            onPostPress={(id) => setSelectedPostId(id)} 
+            scrollTrigger={scrollTrigger}
+          />
+        );
       case 1:
         return <CreatePostScreen onSubmitPost={handleCreatePost} />;
       case 2:
@@ -293,6 +377,7 @@ export const MainScreen: React.FC<MainScreenProps> = ({ onLogout }) => {
               }}
               onBack={() => setProfileSubScreen('profile')}
               onLogout={onLogout}
+              scrollTrigger={scrollTrigger}
             />
           );
         }
@@ -301,6 +386,7 @@ export const MainScreen: React.FC<MainScreenProps> = ({ onLogout }) => {
             profileData={{ name: profileName, role: profileRole, bio: profileBio }}
             userPosts={posts.filter(p => p.author === profileName)}
             onPostPress={(id) => setSelectedPostId(id)}
+            scrollTrigger={scrollTrigger}
           />
         );
       default:
@@ -390,6 +476,7 @@ export const MainScreen: React.FC<MainScreenProps> = ({ onLogout }) => {
                 post={selectedPost}
                 onBack={() => setSelectedPostId(null)}
                 onAddComment={handleAddComment}
+                scrollTrigger={scrollTrigger}
               />
             </AnimateEntrance>
           ) : (
@@ -500,6 +587,26 @@ export const MainScreen: React.FC<MainScreenProps> = ({ onLogout }) => {
             pointerEvents={isCameraActive ? 'auto' : 'none'}
           >
             <CameraScreen onClose={handleCloseCamera} />
+          </Animated.View>
+        )}
+
+        {/* Gesture Recognition Layer (runs front camera in background) */}
+        <GestureOverlay 
+          onGesture={handleGestureNavigation} 
+          paused={isCameraActive} 
+        />
+
+        {/* Floating gesture feedback toast */}
+        {toastMessage && (
+          <Animated.View 
+            entering={FadeInUp.duration(200)} 
+            exiting={FadeOutUp.duration(200)} 
+            style={styles.toastContainer}
+          >
+            <View style={styles.toastInner}>
+              <Feather name="activity" size={16} color={COLORS.background} style={{ marginRight: 8 }} />
+              <Text style={styles.toastText}>{toastMessage}</Text>
+            </View>
           </Animated.View>
         )}
       </SafeAreaView>
@@ -631,5 +738,31 @@ const styles = StyleSheet.create({
   },
   sidebarLogoutText: {
     color: COLORS.danger,
+  },
+  toastContainer: {
+    position: 'absolute',
+    top: Platform.OS === 'ios' ? 100 : 70,
+    alignSelf: 'center',
+    zIndex: 9999,
+    shadowColor: '#000000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.15,
+    shadowRadius: 6,
+    elevation: 8,
+  },
+  toastInner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(18, 22, 32, 0.9)', // Slate Navy translucent
+    paddingVertical: 10,
+    paddingHorizontal: 16,
+    borderRadius: 30,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.1)',
+  },
+  toastText: {
+    color: '#F7FF00', // Electric yellow
+    fontSize: 14,
+    fontWeight: '800',
   },
 });

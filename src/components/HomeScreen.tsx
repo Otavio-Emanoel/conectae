@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { StyleSheet, View, Text, ScrollView, TouchableOpacity, Image, Platform } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import Animated, {
@@ -39,6 +39,7 @@ interface HomeScreenProps {
   posts: PostItem[];
   searchQuery: string;
   onPostPress: (postId: string) => void;
+  scrollTrigger?: { direction: 'up' | 'down'; timestamp: number } | null;
 }
 
 // Sub-component for individual post card to manage its own like spring animation state
@@ -154,7 +155,23 @@ export const PostCard: React.FC<{
   );
 };
 
-export const HomeScreen: React.FC<HomeScreenProps> = ({ posts, searchQuery, onPostPress }) => {
+export const HomeScreen: React.FC<HomeScreenProps> = ({ 
+  posts, 
+  searchQuery, 
+  onPostPress,
+  scrollTrigger
+}) => {
+  const scrollViewRef = useRef<ScrollView>(null);
+  const scrollOffsetRef = useRef(0);
+
+  useEffect(() => {
+    if (scrollTrigger) {
+      const delta = scrollTrigger.direction === 'down' ? 250 : -250;
+      const targetY = Math.max(0, scrollOffsetRef.current + delta);
+      scrollViewRef.current?.scrollTo({ y: targetY, animated: true });
+    }
+  }, [scrollTrigger]);
+
   const filteredPosts = posts.filter(post =>
     post.content.toLowerCase().includes(searchQuery.toLowerCase()) ||
     post.author.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -162,7 +179,15 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ posts, searchQuery, onPo
   );
 
   return (
-    <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+    <ScrollView 
+      ref={scrollViewRef}
+      contentContainerStyle={styles.scrollContent} 
+      showsVerticalScrollIndicator={false}
+      onScroll={(event) => {
+        scrollOffsetRef.current = event.nativeEvent.contentOffset.y;
+      }}
+      scrollEventThrottle={16}
+    >
       {/* Top Banner Accent */}
       <AnimateEntrance preset="slideUp" delay={100}>
         <View style={styles.banner}>
