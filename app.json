@@ -27,7 +27,14 @@
       "favicon": "./assets/favicon.png"
     },
     "plugins": [
-      "expo-font"
+      "expo-font",
+      [
+        "expo-camera",
+        {
+          "cameraPermission": "Permita que o CONECTAE acesse a câmera para tirar fotos.",
+          "microphonePermission": "Permita que o CONECTAE acesse o microfone."
+        }
+      ]
     ]
   }
 }

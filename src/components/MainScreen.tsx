@@ -17,6 +17,7 @@ import Animated, {
   withTiming,
   runOnJS
 } from 'react-native-reanimated';
+import { GestureDetector, Gesture } from 'react-native-gesture-handler';
 import { TopBar } from './ui/TopBar';
 import { NavBar } from './ui/NavBar';
 import { COLORS } from '../constants/colors';
@@ -26,6 +27,7 @@ import { CreatePostScreen } from './CreatePostScreen';
 import { ProfileScreen } from './ProfileScreen';
 import { SettingsScreen } from './SettingsScreen';
 import { PostDetailScreen } from './PostDetailScreen';
+import { CameraScreen } from './CameraScreen';
 import { SPRING_SPECS } from '../constants/motion';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
@@ -122,6 +124,11 @@ export const MainScreen: React.FC<MainScreenProps> = ({ onLogout }) => {
   const [sidebarVisible, setSidebarVisible] = useState(false);
   const sidebarProgress = useSharedValue(0);
 
+  // Camera state & shared values
+  const [isCameraActive, setIsCameraActive] = useState(false);
+  const cameraProgress = useSharedValue(0);
+  const cameraStartX = useSharedValue(0);
+
   // Dynamic user profile fields
   const [profileName, setProfileName] = useState('Otávio Emanoel');
   const [profileRole, setProfileRole] = useState('Desenvolvedor React Native');
@@ -202,6 +209,66 @@ export const MainScreen: React.FC<MainScreenProps> = ({ onLogout }) => {
     setProfileSubScreen('settings');
   };
 
+  const handleCloseCamera = () => {
+    cameraProgress.value = withTiming(0, { duration: 240 }, (finished) => {
+      if (finished) {
+        runOnJS(setIsCameraActive)(false);
+      }
+    });
+  };
+
+  // Pan gesture to swipe horizontal: swipe left to open camera, swipe right to close
+  const cameraPanGesture = Gesture.Pan()
+    .enabled(activeTab === 0 && selectedPostId === null && !sidebarVisible)
+    .activeOffsetX([-10, 10])
+    .onStart(() => {
+      cameraStartX.value = cameraProgress.value;
+      if (cameraStartX.value === 0) {
+        runOnJS(setIsCameraActive)(true);
+      }
+    })
+    .onUpdate((event) => {
+      if (cameraStartX.value === 0) {
+        // Closed, dragging left (negative translationX) to slide camera in
+        const progress = -event.translationX / SCREEN_WIDTH;
+        cameraProgress.value = Math.max(0, Math.min(1, progress));
+      } else {
+        // Open, dragging right (positive translationX) to slide camera out
+        const progress = 1 - event.translationX / SCREEN_WIDTH;
+        cameraProgress.value = Math.max(0, Math.min(1, progress));
+      }
+    })
+    .onEnd((event) => {
+      const progress = cameraProgress.value;
+      const velocityX = event.velocityX;
+
+      if (cameraStartX.value === 0) {
+        // Try opening camera
+        if (progress > 0.35 || velocityX < -500) {
+          cameraProgress.value = withSpring(1, SPRING_SPECS.snappy);
+          runOnJS(setIsCameraActive)(true);
+        } else {
+          cameraProgress.value = withTiming(0, { duration: 200 }, (finished) => {
+            if (finished) {
+              runOnJS(setIsCameraActive)(false);
+            }
+          });
+        }
+      } else {
+        // Try closing camera
+        if (progress < 0.65 || velocityX > 500) {
+          cameraProgress.value = withSpring(0, SPRING_SPECS.snappy);
+          runOnJS(setIsCameraActive)(false);
+        } else {
+          cameraProgress.value = withTiming(1, { duration: 200 }, (finished) => {
+            if (finished) {
+              runOnJS(setIsCameraActive)(true);
+            }
+          });
+        }
+      }
+    });
+
   const renderActiveTabContent = () => {
     switch (activeTab) {
       case 0:
@@ -255,138 +322,178 @@ export const MainScreen: React.FC<MainScreenProps> = ({ onLogout }) => {
     };
   });
 
+  // Camera Slide Style
+  const cameraStyle = useAnimatedStyle(() => {
+    return {
+      transform: [
+        { translateX: (1 - cameraProgress.value) * SCREEN_WIDTH }
+      ],
+    };
+  });
+
+  // TopBar Slide Up Out of View
+  const topBarStyle = useAnimatedStyle(() => {
+    return {
+      transform: [
+        { translateY: -cameraProgress.value * 80 }
+      ],
+    };
+  });
+
+  // NavBar Slide Down Out of View
+  const navBarStyle = useAnimatedStyle(() => {
+    return {
+      transform: [
+        { translateY: cameraProgress.value * 120 }
+      ],
+    };
+  });
+
   // Find selected post details
   const selectedPost = posts.find(p => p.id === selectedPostId);
 
   return (
-    <SafeAreaView style={styles.container}>
-      {/* Render TopBar only if header should be visible */}
-      {showTopBar && (
-        <TopBar 
-          onSearch={(text) => setSearchQuery(text)} 
-          rightIconType={activeTab === 2 ? 'menu' : 'search'}
-          onMenuPress={openSidebar}
-        />
-      )}
-
-      {/* Main Content Area */}
-      <KeyboardAvoidingView
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        style={[
-          styles.contentContainer,
-          !showNavBar && { paddingBottom: 0 } // Remove spacer if nav bar is hidden
-        ]}
-      >
-        {selectedPost ? (
-          <AnimateEntrance 
-            key={`post-detail-${selectedPostId}`} 
-            preset="fade" 
-            duration={300} 
-            style={styles.tabContentWrapper}
-          >
-            <PostDetailScreen 
-              post={selectedPost}
-              onBack={() => setSelectedPostId(null)}
-              onAddComment={handleAddComment}
+    <GestureDetector gesture={cameraPanGesture}>
+      <SafeAreaView style={styles.container}>
+        {/* Render TopBar only if header should be visible */}
+        {showTopBar && (
+          <Animated.View style={topBarStyle}>
+            <TopBar 
+              onSearch={(text) => setSearchQuery(text)} 
+              rightIconType={activeTab === 2 ? 'menu' : 'search'}
+              onMenuPress={openSidebar}
             />
-          </AnimateEntrance>
-        ) : (
-          <AnimateEntrance 
-            key={`tab-view-${activeTab}-${profileSubScreen}`} 
-            preset="fade" 
-            duration={350} 
-            style={styles.tabContentWrapper}
-          >
-            {renderActiveTabContent()}
-          </AnimateEntrance>
+          </Animated.View>
         )}
-      </KeyboardAvoidingView>
 
-      {/* Bottom Bar */}
-      {showNavBar && (
-        <NavBar activeIndex={activeTab} onChangeTab={handleTabChange} />
-      )}
+        {/* Main Content Area */}
+        <KeyboardAvoidingView
+          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+          style={[
+            styles.contentContainer,
+            !showNavBar && { paddingBottom: 0 } // Remove spacer if nav bar is hidden
+          ]}
+        >
+          {selectedPost ? (
+            <AnimateEntrance 
+              key={`post-detail-${selectedPostId}`} 
+              preset="fade" 
+              duration={300} 
+              style={styles.tabContentWrapper}
+            >
+              <PostDetailScreen 
+                post={selectedPost}
+                onBack={() => setSelectedPostId(null)}
+                onAddComment={handleAddComment}
+              />
+            </AnimateEntrance>
+          ) : (
+            <AnimateEntrance 
+              key={`tab-view-${activeTab}-${profileSubScreen}`} 
+              preset="fade" 
+              duration={350} 
+              style={styles.tabContentWrapper}
+            >
+              {renderActiveTabContent()}
+            </AnimateEntrance>
+          )}
+        </KeyboardAvoidingView>
 
-      {/* Sidebar Configurations Drawer */}
-      {sidebarVisible && (
-        <View style={StyleSheet.absoluteFill}>
-          {/* Backdrop overlay */}
-          <Animated.View style={[styles.sidebarBackdrop, backdropStyle]}>
-            <TouchableOpacity 
-              style={StyleSheet.absoluteFillObject} 
-              activeOpacity={1} 
-              onPress={() => closeSidebar()} 
-            />
+        {/* Bottom Bar */}
+        {showNavBar && (
+          <Animated.View style={navBarStyle}>
+            <NavBar activeIndex={activeTab} onChangeTab={handleTabChange} />
           </Animated.View>
+        )}
 
-          {/* Drawer sheet */}
-          <Animated.View style={[styles.sidebarDrawer, drawerStyle]}>
-            <View style={styles.sidebarHeader}>
-              <Text style={styles.sidebarTitle}>Ajustes</Text>
-              <TouchableOpacity onPress={() => closeSidebar()} style={styles.closeButton} activeOpacity={0.6}>
-                <Feather name="x" size={24} color={COLORS.background} />
-              </TouchableOpacity>
-            </View>
+        {/* Sidebar Configurations Drawer */}
+        {sidebarVisible && (
+          <View style={StyleSheet.absoluteFill}>
+            {/* Backdrop overlay */}
+            <Animated.View style={[styles.sidebarBackdrop, backdropStyle]}>
+              <TouchableOpacity 
+                style={StyleSheet.absoluteFillObject} 
+                activeOpacity={1} 
+                onPress={() => closeSidebar()} 
+              />
+            </Animated.View>
 
-            {/* Profile Mini Header */}
-            <View style={styles.sidebarProfileHeader}>
-              <View style={styles.sidebarAvatar}>
-                <Feather name="user" size={22} color={COLORS.primary} />
+            {/* Drawer sheet */}
+            <Animated.View style={[styles.sidebarDrawer, drawerStyle]}>
+              <View style={styles.sidebarHeader}>
+                <Text style={styles.sidebarTitle}>Ajustes</Text>
+                <TouchableOpacity onPress={() => closeSidebar()} style={styles.closeButton} activeOpacity={0.6}>
+                  <Feather name="x" size={24} color={COLORS.background} />
+                </TouchableOpacity>
               </View>
-              <View style={styles.sidebarProfileInfo}>
-                <Text style={styles.sidebarProfileName} numberOfLines={1}>{profileName}</Text>
-                <Text style={styles.sidebarProfileRole} numberOfLines={1}>{profileRole}</Text>
+
+              {/* Profile Mini Header */}
+              <View style={styles.sidebarProfileHeader}>
+                <View style={styles.sidebarAvatar}>
+                  <Feather name="user" size={22} color={COLORS.primary} />
+                </View>
+                <View style={styles.sidebarProfileInfo}>
+                  <Text style={styles.sidebarProfileName} numberOfLines={1}>{profileName}</Text>
+                  <Text style={styles.sidebarProfileRole} numberOfLines={1}>{profileRole}</Text>
+                </View>
               </View>
-            </View>
 
-            {/* Options List */}
-            <View style={styles.sidebarOptions}>
-              <TouchableOpacity 
-                onPress={() => handleSidebarOptionPress('edit')}
-                style={styles.sidebarOptionItem} 
-                activeOpacity={0.6}
-              >
-                <Feather name="edit-3" size={18} color={COLORS.background} style={styles.sidebarOptionIcon} />
-                <Text style={styles.sidebarOptionText}>Editar Perfil</Text>
-              </TouchableOpacity>
+              {/* Options List */}
+              <View style={styles.sidebarOptions}>
+                <TouchableOpacity 
+                  onPress={() => handleSidebarOptionPress('edit')}
+                  style={styles.sidebarOptionItem} 
+                  activeOpacity={0.6}
+                >
+                  <Feather name="edit-3" size={18} color={COLORS.background} style={styles.sidebarOptionIcon} />
+                  <Text style={styles.sidebarOptionText}>Editar Perfil</Text>
+                </TouchableOpacity>
 
-              <TouchableOpacity 
-                onPress={() => handleSidebarOptionPress('notifications')}
-                style={styles.sidebarOptionItem} 
-                activeOpacity={0.6}
-              >
-                <Feather name="bell" size={18} color={COLORS.background} style={styles.sidebarOptionIcon} />
-                <Text style={styles.sidebarOptionText}>Configurações de Notificações</Text>
-              </TouchableOpacity>
+                <TouchableOpacity 
+                  onPress={() => handleSidebarOptionPress('notifications')}
+                  style={styles.sidebarOptionItem} 
+                  activeOpacity={0.6}
+                >
+                  <Feather name="bell" size={18} color={COLORS.background} style={styles.sidebarOptionIcon} />
+                  <Text style={styles.sidebarOptionText}>Configurações de Notificações</Text>
+                </TouchableOpacity>
 
-              <TouchableOpacity 
-                onPress={() => handleSidebarOptionPress('privacy')}
-                style={styles.sidebarOptionItem} 
-                activeOpacity={0.6}
-              >
-                <Feather name="shield" size={18} color={COLORS.background} style={styles.sidebarOptionIcon} />
-                <Text style={styles.sidebarOptionText}>Privacidade e Segurança</Text>
-              </TouchableOpacity>
+                <TouchableOpacity 
+                  onPress={() => handleSidebarOptionPress('privacy')}
+                  style={styles.sidebarOptionItem} 
+                  activeOpacity={0.6}
+                >
+                  <Feather name="shield" size={18} color={COLORS.background} style={styles.sidebarOptionIcon} />
+                  <Text style={styles.sidebarOptionText}>Privacidade e Segurança</Text>
+                </TouchableOpacity>
 
-              <View style={styles.sidebarDivider} />
+                <View style={styles.sidebarDivider} />
 
-              <TouchableOpacity 
-                onPress={() => {
-                  closeSidebar(() => {
-                    onLogout();
-                  });
-                }}
-                style={[styles.sidebarOptionItem, styles.sidebarLogoutItem]} 
-                activeOpacity={0.6}
-              >
-                <Feather name="log-out" size={18} color={COLORS.danger} style={styles.sidebarOptionIcon} />
-                <Text style={[styles.sidebarOptionText, styles.sidebarLogoutText]}>Sair da Conta</Text>
-              </TouchableOpacity>
-            </View>
+                <TouchableOpacity 
+                  onPress={() => {
+                    closeSidebar(() => {
+                      onLogout();
+                    });
+                  }}
+                  style={[styles.sidebarOptionItem, styles.sidebarLogoutItem]} 
+                  activeOpacity={0.6}
+                >
+                  <Feather name="log-out" size={18} color={COLORS.danger} style={styles.sidebarOptionIcon} />
+                  <Text style={[styles.sidebarOptionText, styles.sidebarLogoutText]}>Sair da Conta</Text>
+                </TouchableOpacity>
+              </View>
+            </Animated.View>
+          </View>
+        )}
+
+        {/* Camera Screen Overlay (zIndex 100) */}
+        {(isCameraActive || cameraProgress.value > 0) && (
+          <Animated.View style={[StyleSheet.absoluteFillObject, cameraStyle, { zIndex: 100 }]}>
+            <CameraScreen onClose={handleCloseCamera} />
           </Animated.View>
-        </View>
-      )}
-    </SafeAreaView>
+        )}
+      </SafeAreaView>
+    </GestureDetector>
   );
 };
 
