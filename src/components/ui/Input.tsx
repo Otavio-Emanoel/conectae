@@ -6,7 +6,8 @@ import {
   TextInput, 
   TextInputProps, 
   TouchableOpacity, 
-  ViewStyle 
+  ViewStyle,
+  Platform
 } from 'react-native';
 import Animated, { 
   useAnimatedStyle, 
@@ -65,24 +66,30 @@ export const Input: React.FC<InputProps> = ({
     };
   });
 
+  const isMultiline = rest.multiline;
+
   return (
     <View style={[styles.wrapper, containerStyle]}>
       {/* Input Label */}
       <Text style={styles.label}>{label}</Text>
 
       {/* Input Field Container */}
-      <Animated.View style={[styles.container, animatedContainerStyle]}>
+      <Animated.View style={[
+        styles.container, 
+        isMultiline && styles.containerMultiline,
+        animatedContainerStyle
+      ]}>
         {iconName && (
           <Feather 
             name={iconName} 
             size={20} 
             color={COLORS.inputIcon} 
-            style={styles.leadingIcon} 
+            style={[styles.leadingIcon, isMultiline && styles.leadingIconMultiline]} 
           />
         )}
         
         <TextInput
-          style={styles.input}
+          style={[styles.input, isMultiline && styles.inputMultiline, rest.style]}
           placeholderTextColor={COLORS.inputPlaceholder}
           secureTextEntry={isPassword && !isPasswordVisible}
           onFocus={handleFocus}
@@ -134,8 +141,17 @@ const styles = StyleSheet.create({
     shadowRadius: 6,
     elevation: 1,
   },
+  containerMultiline: {
+    height: undefined,
+    minHeight: 120,
+    alignItems: 'flex-start',
+    paddingVertical: 12,
+  },
   leadingIcon: {
     marginRight: 12,
+  },
+  leadingIconMultiline: {
+    marginTop: Platform.OS === 'ios' ? 2 : 4,
   },
   input: {
     flex: 1,
@@ -143,6 +159,12 @@ const styles = StyleSheet.create({
     color: COLORS.inputText,
     fontSize: 16,
     fontWeight: '500',
+  },
+  inputMultiline: {
+    height: undefined,
+    minHeight: 100,
+    textAlignVertical: 'top',
+    paddingTop: 0,
   },
   trailingIcon: {
     padding: 4,

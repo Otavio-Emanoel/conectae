@@ -12,13 +12,14 @@ import { COLORS } from '../constants/colors';
 import { AnimateEntrance } from './ui/AnimateEntrance';
 import { SPRING_SPECS } from '../constants/motion';
 
-interface PostItem {
+export interface PostItem {
   id: string;
   author: string;
   role: string;
   avatarColor: string;
   time: string;
   content: string;
+  image: string | null;
   likes: number;
   comments: number;
   shares: number;
@@ -26,47 +27,9 @@ interface PostItem {
 }
 
 interface HomeScreenProps {
+  posts: PostItem[];
   searchQuery: string;
 }
-
-const INITIAL_POSTS: PostItem[] = [
-  {
-    id: '1',
-    author: 'Otávio Emanoel',
-    role: 'Desenvolvedor React Native',
-    avatarColor: '#121620',
-    time: 'Há 15 min',
-    content: 'Acabei de finalizar o protótipo da nova interface do CONECTAE! O efeito de LiquidGlass na NavBar ficou extremamente fluido e as transições de tela rodam a 60 FPS cravados. O que acharam da paleta de cores? 🚀📱',
-    likes: 24,
-    comments: 8,
-    shares: 3,
-    tags: ['ReactNative', 'UXDesign', 'Reanimated', 'LiquidGlass'],
-  },
-  {
-    id: '2',
-    author: 'Marina Silva',
-    role: 'Product Designer @ DesignLab',
-    avatarColor: '#E11D48',
-    time: 'Há 2 horas',
-    content: 'Dica rápida de UX: Em interfaces mobile, dê prioridade a feedbacks táteis e micro-animações nas áreas onde o polegar alcança mais facilmente. Uma navbar com efeito de mola suave aumenta o engajamento em até 30%!',
-    likes: 85,
-    comments: 18,
-    shares: 12,
-    tags: ['UXUI', 'MobileDesign', 'ProductDesign', 'Dicas'],
-  },
-  {
-    id: '3',
-    author: 'Bruno Rocha',
-    role: 'Tech Lead @ TechCorp',
-    avatarColor: '#2563EB',
-    time: 'Há 5 horas',
-    content: 'Estamos contratando Desenvolvedores React Native (Pleno/Sênior) para atuar em projetos globais de impacto. Requisitos principais: domínio de TypeScript, Reanimated e boas práticas de acessibilidade. Vaga 100% remota. Interessados, enviem DM!',
-    likes: 42,
-    comments: 7,
-    shares: 15,
-    tags: ['Vagas', 'ReactNative', 'TypeScript', 'RemoteJobs'],
-  },
-];
 
 // Sub-component for individual post card to manage its own like spring animation state
 const PostCard: React.FC<{ post: PostItem; index: number }> = ({ post, index }) => {
@@ -118,6 +81,13 @@ const PostCard: React.FC<{ post: PostItem; index: number }> = ({ post, index }) 
         {/* Card Content */}
         <Text style={styles.cardContent}>{post.content}</Text>
 
+        {/* Optional Image */}
+        {post.image && (
+          <View style={styles.cardImageContainer}>
+            <Image source={{ uri: post.image }} style={styles.cardImage} resizeMode="cover" />
+          </View>
+        )}
+
         {/* Hashtags */}
         {post.tags.length > 0 && (
           <View style={styles.tagsRow}>
@@ -140,7 +110,6 @@ const PostCard: React.FC<{ post: PostItem; index: number }> = ({ post, index }) 
                 name={liked ? 'heart' : 'heart'}
                 size={20}
                 color={liked ? COLORS.danger : COLORS.primary}
-                style={liked && styles.filledHeart}
               />
             </Animated.View>
             <Text style={[styles.actionBtnText, liked && styles.activeLikeText]}>
@@ -163,8 +132,8 @@ const PostCard: React.FC<{ post: PostItem; index: number }> = ({ post, index }) 
   );
 };
 
-export const HomeScreen: React.FC<HomeScreenProps> = ({ searchQuery }) => {
-  const filteredPosts = INITIAL_POSTS.filter(post =>
+export const HomeScreen: React.FC<HomeScreenProps> = ({ posts, searchQuery }) => {
+  const filteredPosts = posts.filter(post =>
     post.content.toLowerCase().includes(searchQuery.toLowerCase()) ||
     post.author.toLowerCase().includes(searchQuery.toLowerCase()) ||
     post.tags.some(tag => tag.toLowerCase().includes(searchQuery.toLowerCase()))
@@ -283,6 +252,19 @@ const styles = StyleSheet.create({
     lineHeight: 21,
     fontWeight: '500',
   },
+  cardImageContainer: {
+    width: '100%',
+    height: 160,
+    borderRadius: 12,
+    overflow: 'hidden',
+    marginTop: 12,
+    borderWidth: 1,
+    borderColor: 'rgba(18, 22, 32, 0.05)',
+  },
+  cardImage: {
+    width: '100%',
+    height: '100%',
+  },
   tagsRow: {
     flexDirection: 'row',
     flexWrap: 'wrap',
@@ -326,10 +308,6 @@ const styles = StyleSheet.create({
   },
   activeLikeText: {
     color: COLORS.danger,
-  },
-  filledHeart: {
-    // Fill effect workaround in feather
-    textShadowColor: COLORS.danger,
   },
   emptyContainer: {
     alignItems: 'center',

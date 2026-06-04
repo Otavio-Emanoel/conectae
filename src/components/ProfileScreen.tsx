@@ -6,9 +6,10 @@ import { AnimateEntrance } from './ui/AnimateEntrance';
 
 interface ProfileScreenProps {
   onLogout?: () => void;
+  onNavigateToSettings: () => void;
 }
 
-export const ProfileScreen: React.FC<ProfileScreenProps> = ({ onLogout }) => {
+export const ProfileScreen: React.FC<ProfileScreenProps> = ({ onLogout, onNavigateToSettings }) => {
   return (
     <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
       {/* Profile Info Header Card */}
@@ -49,7 +50,7 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({ onLogout }) => {
       {/* Settings / Actions List */}
       <View style={styles.settingsSection}>
         <AnimateEntrance preset="slideUp" delay={200}>
-          <TouchableOpacity style={styles.settingItem} activeOpacity={0.6}>
+          <TouchableOpacity onPress={onNavigateToSettings} style={styles.settingItem} activeOpacity={0.6}>
             <View style={styles.settingLeft}>
               <Feather name="edit-3" size={20} color={COLORS.primary} />
               <Text style={styles.settingText}>Editar Perfil</Text>
@@ -59,7 +60,7 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({ onLogout }) => {
         </AnimateEntrance>
 
         <AnimateEntrance preset="slideUp" delay={275}>
-          <TouchableOpacity style={styles.settingItem} activeOpacity={0.6}>
+          <TouchableOpacity onPress={onNavigateToSettings} style={styles.settingItem} activeOpacity={0.6}>
             <View style={styles.settingLeft}>
               <Feather name="bell" size={20} color={COLORS.primary} />
               <Text style={styles.settingText}>Configurações de Notificações</Text>
@@ -69,7 +70,7 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({ onLogout }) => {
         </AnimateEntrance>
 
         <AnimateEntrance preset="slideUp" delay={350}>
-          <TouchableOpacity style={styles.settingItem} activeOpacity={0.6}>
+          <TouchableOpacity onPress={onNavigateToSettings} style={styles.settingItem} activeOpacity={0.6}>
             <View style={styles.settingLeft}>
               <Feather name="shield" size={20} color={COLORS.primary} />
               <Text style={styles.settingText}>Privacidade e Segurança</Text>
