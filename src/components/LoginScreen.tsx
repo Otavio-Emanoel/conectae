@@ -36,7 +36,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onNavigateToSignUp, on
         keyboardShouldPersistTaps="handled"
       >
         {/* Back Button */}
-        <AnimateEntrance preset="fade" delay={100} duration={300}>
+        <AnimateEntrance preset="fade" delay={60} duration={180}>
           <View style={styles.headerNav}>
             <TouchableOpacity
               onPress={onBack}
@@ -49,7 +49,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onNavigateToSignUp, on
         </AnimateEntrance>
 
         {/* Logo Container */}
-        <AnimateEntrance preset="scale" delay={200} duration={600}>
+        <AnimateEntrance preset="scale" delay={100} duration={260}>
           <View style={styles.logoContainer}>
             <Image
               source={require('../../assets/logo.png')}
@@ -60,7 +60,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onNavigateToSignUp, on
         </AnimateEntrance>
 
         {/* Header Texts */}
-        <AnimateEntrance preset="slideUp" delay={300} duration={500}>
+        <AnimateEntrance preset="slideUp" delay={140} duration={220}>
           <View style={styles.header}>
             <Text style={styles.title}>Bem-vindo de volta</Text>
             <Text style={styles.subtitle}>Acesse sua conta para continuar</Text>
@@ -69,7 +69,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onNavigateToSignUp, on
 
         {/* Form Fields */}
         <View style={styles.form}>
-          <AnimateEntrance preset="slideUp" delay={400} duration={500}>
+          <AnimateEntrance preset="slideUp" delay={180} duration={220}>
             <Input
               label="E-mail"
               placeholder="Digite seu e-mail"
@@ -80,7 +80,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onNavigateToSignUp, on
             />
           </AnimateEntrance>
 
-          <AnimateEntrance preset="slideUp" delay={500} duration={500}>
+          <AnimateEntrance preset="slideUp" delay={240} duration={220}>
             <Input
               label="Senha"
               placeholder="Digite sua senha"
@@ -92,7 +92,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onNavigateToSignUp, on
           </AnimateEntrance>
 
           {/* Forgot Password Link */}
-          <AnimateEntrance preset="slideUp" delay={550} duration={400}>
+          <AnimateEntrance preset="slideUp" delay={280} duration={180}>
             <TouchableOpacity style={styles.forgotPassword} activeOpacity={0.6}>
               <Text style={styles.forgotPasswordText}>Esqueci a senha</Text>
             </TouchableOpacity>
@@ -100,7 +100,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onNavigateToSignUp, on
         </View>
 
         {/* Action Button */}
-        <AnimateEntrance preset="slideUp" delay={650} duration={500}>
+        <AnimateEntrance preset="slideUp" delay={340} duration={220}>
           <Button
             title="Entrar"
             onPress={() => {
@@ -113,7 +113,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onNavigateToSignUp, on
         </AnimateEntrance>
 
         {/* Footer Navigation */}
-        <AnimateEntrance preset="slideUp" delay={750} duration={500}>
+        <AnimateEntrance preset="slideUp" delay={400} duration={220}>
           <TouchableOpacity
             onPress={onNavigateToSignUp}
             style={styles.footer}

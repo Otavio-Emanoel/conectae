@@ -38,7 +38,7 @@ export const SignUpScreen: React.FC<SignUpScreenProps> = ({ onNavigateToLogin, o
         keyboardShouldPersistTaps="handled"
       >
         {/* Back Button */}
-        <AnimateEntrance preset="fade" delay={100} duration={300}>
+        <AnimateEntrance preset="fade" delay={60} duration={180}>
           <View style={styles.headerNav}>
             <TouchableOpacity 
               onPress={onBack} 
@@ -51,7 +51,7 @@ export const SignUpScreen: React.FC<SignUpScreenProps> = ({ onNavigateToLogin, o
         </AnimateEntrance>
 
         {/* Logo Container */}
-        <AnimateEntrance preset="scale" delay={150} duration={600}>
+        <AnimateEntrance preset="scale" delay={90} duration={260}>
           <View style={styles.logoContainer}>
             <Image 
               source={require('../../assets/logo.png')} 
@@ -62,7 +62,7 @@ export const SignUpScreen: React.FC<SignUpScreenProps> = ({ onNavigateToLogin, o
         </AnimateEntrance>
 
         {/* Header Texts */}
-        <AnimateEntrance preset="slideUp" delay={200} duration={500}>
+        <AnimateEntrance preset="slideUp" delay={120} duration={220}>
           <View style={styles.header}>
             <Text style={styles.title}>Crie sua conta</Text>
             <Text style={styles.subtitle}>Junte-se à comunidade hoje mesmo.</Text>
@@ -71,7 +71,7 @@ export const SignUpScreen: React.FC<SignUpScreenProps> = ({ onNavigateToLogin, o
 
         {/* Form Fields */}
         <View style={styles.form}>
-          <AnimateEntrance preset="slideUp" delay={250} duration={500}>
+          <AnimateEntrance preset="slideUp" delay={160} duration={220}>
             <Input 
               label="Nome completo"
               placeholder="Ex: João da Silva"
@@ -81,7 +81,7 @@ export const SignUpScreen: React.FC<SignUpScreenProps> = ({ onNavigateToLogin, o
             />
           </AnimateEntrance>
 
-          <AnimateEntrance preset="slideUp" delay={350} duration={500}>
+          <AnimateEntrance preset="slideUp" delay={220} duration={220}>
             <Input 
               label="E-mail"
               placeholder="seu@email.com"
@@ -92,7 +92,7 @@ export const SignUpScreen: React.FC<SignUpScreenProps> = ({ onNavigateToLogin, o
             />
           </AnimateEntrance>
 
-          <AnimateEntrance preset="slideUp" delay={450} duration={500}>
+          <AnimateEntrance preset="slideUp" delay={280} duration={220}>
             <Input 
               label="Senha"
               placeholder="Mínimo 8 caracteres"
@@ -103,7 +103,7 @@ export const SignUpScreen: React.FC<SignUpScreenProps> = ({ onNavigateToLogin, o
             />
           </AnimateEntrance>
 
-          <AnimateEntrance preset="slideUp" delay={550} duration={500}>
+          <AnimateEntrance preset="slideUp" delay={340} duration={220}>
             <Input 
               label="Confirmar senha"
               placeholder="Repita sua senha"
@@ -116,7 +116,7 @@ export const SignUpScreen: React.FC<SignUpScreenProps> = ({ onNavigateToLogin, o
         </View>
 
         {/* Action Button */}
-        <AnimateEntrance preset="slideUp" delay={650} duration={500}>
+        <AnimateEntrance preset="slideUp" delay={400} duration={220}>
           <Button 
             title="Cadastrar" 
             onPress={() => {
@@ -128,7 +128,7 @@ export const SignUpScreen: React.FC<SignUpScreenProps> = ({ onNavigateToLogin, o
         </AnimateEntrance>
 
         {/* Footer Navigation */}
-        <AnimateEntrance preset="slideUp" delay={750} duration={500}>
+        <AnimateEntrance preset="slideUp" delay={460} duration={220}>
           <TouchableOpacity 
             onPress={onNavigateToLogin} 
             style={styles.footer} 
