@@ -31,17 +31,17 @@ const getPresets = (preset: AnimationPreset, delay: number, duration: number) =>
     case 'slideUp':
       return {
         entering: FadeInDown.delay(d).duration(dur).springify().damping(22).stiffness(90).mass(1.1),
-        exiting: FadeOutUp.duration(dur * 0.8),
+        exiting: FadeOutUp.duration(dur * 0.3),
       };
     case 'slideSide':
       return {
         entering: SlideInRight.delay(d).duration(dur).springify().damping(20).stiffness(100),
-        exiting: SlideOutLeft.duration(dur * 0.8),
+        exiting: SlideOutLeft.duration(dur * 0.3),
       };
     case 'scale':
       return {
         entering: ZoomIn.delay(d).duration(dur).springify().damping(20).stiffness(95).mass(1.1),
-        exiting: ZoomOut.duration(dur * 0.8),
+        exiting: ZoomOut.duration(dur * 0.3),
       };
     case 'fade':
     default:
